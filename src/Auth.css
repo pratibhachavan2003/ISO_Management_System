@@ -1,0 +1,136 @@
+/* Auth.css (Dark theme like HomePage) */
+
+:root {
+  --bg: #0b1220;
+  --text: #eaf0ff;
+  --muted: rgba(234, 240, 255, 0.72);
+  --border: rgba(255, 255, 255, 0.12);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  --shadow2: 0 10px 26px rgba(0, 0, 0, 0.25);
+  --grad: linear-gradient(135deg, #6ee7ff, #7c3aed);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Page background + center */
+.auth-container {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Optional top nav (if you use it on auth pages) */
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(11, 18, 32, 0.82);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  z-index: 50;
+}
+
+.top-nav button {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 9px 14px;
+  cursor: pointer;
+  border-radius: 12px;
+  font-weight: 800;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.top-nav button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow2);
+}
+
+/* Form card */
+.auth-form {
+  width: 100%;
+  max-width: 420px;
+  padding: 22px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.05)
+  );
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+
+.auth-form h2 {
+  text-align: center;
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.auth-form p {
+  text-align: center;
+  margin-top: 14px;
+  color: var(--muted);
+}
+
+/* Inputs + Select */
+.auth-form input,
+.auth-form select {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(5, 10, 20, 0.35);
+  color: var(--text);
+  outline: none;
+}
+
+.auth-form input::placeholder {
+  color: rgba(234, 240, 255, 0.45);
+}
+
+.auth-form input:focus,
+.auth-form select:focus {
+  border-color: rgba(110, 231, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(110, 231, 255, 0.14);
+}
+
+/* Dropdown options should stay readable */
+.auth-form option {
+  color: #000;
+}
+
+/* Button */
+.auth-form button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  background: var(--grad);
+  color: #07101f;
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+  font-weight: 900;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.auth-form button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow2);
+}

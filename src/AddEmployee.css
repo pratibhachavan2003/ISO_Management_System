@@ -1,0 +1,97 @@
+/* ===== Full Page Background ===== */
+.add-employee-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #0f172a; /* Dark Admin Background */
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* ===== Form Card ===== */
+.employee-form {
+  width: 450px;
+  padding: 35px;
+  border-radius: 18px;
+  background: #1e293b; /* Dark Card */
+  box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ===== Title ===== */
+.employee-form h2 {
+  margin-bottom: 25px;
+  font-size: 22px;
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+/* ===== Input Fields ===== */
+.employee-form input,
+.employee-form select {
+  width: 100%;
+  padding: 12px 14px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 15px;
+  outline: none;
+  transition: 0.3s;
+}
+
+/* Placeholder Color */
+.employee-form input::placeholder {
+  color: #94a3b8;
+}
+
+/* Focus Effect */
+.employee-form input:focus,
+.employee-form select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0px 0px 6px rgba(56, 189, 248, 0.6);
+}
+
+/* ===== Dropdown Styling ===== */
+.employee-form select {
+  cursor: pointer;
+}
+
+/* ===== RoleID Display ===== */
+.role-id-display {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #22c55e;
+  font-weight: 500;
+}
+
+/* ===== Submit Button ===== */
+.employee-form button {
+  width: 100%;
+  padding: 13px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(to right, #2563eb, #38bdf8);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+/* Hover Effect */
+.employee-form button:hover {
+  transform: scale(1.03);
+  opacity: 0.95;
+}
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 500px) {
+  .employee-form {
+    width: 90%;
+    padding: 25px;
+  }
+}

@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AddEmployee.css";
 
-const AddEmployee = () => {
+const API = "http://localhost:8080/api/admin/add-employee"; 
+
+export default function AddEmployee() {
   const navigate = useNavigate();
 
-  // ✅ Role Mapping (Automatic RoleID)
   const roles = [
     { roleName: "Admin", roleId: 1 },
     { roleName: "User", roleId: 2 },
@@ -13,84 +14,74 @@ const AddEmployee = () => {
     { roleName: "Auditor", roleId: 4 },
   ];
 
-  // ✅ Employee State
   const [employee, setEmployee] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
-    roleName: "",
-    roleId: "",
+    confirmPassword: "",
+    roleid: "", // ✅ backend expects roleid
   });
 
-  // ✅ Handle Input Change
+  
+
+
   const handleChange = (e) => {
-    setEmployee({
-      ...employee,
-      [e.target.name]: e.target.value,
-    });
+    setEmployee((p) => ({ ...p, [e.target.name]: e.target.value }));
   };
 
-  // ✅ Handle Role Dropdown Change (Safe + No Crash)
   const handleRoleChange = (e) => {
     const value = e.target.value;
+    const selected = roles.find((r) => String(r.roleId) === value);
 
-    if (!value) {
-      setEmployee((prev) => ({
-        ...prev,
-        roleName: "",
-        roleId: "",
-      }));
-      return;
-    }
-
-    const selectedRole = roles.find((role) => role.roleName === value);
-    if (!selectedRole) return;
-
-    setEmployee((prev) => ({
-      ...prev,
-      roleName: selectedRole.roleName,
-      roleId: selectedRole.roleId,
+    setEmployee((p) => ({
+      ...p,
+      roleid: value ? Number(value) : "",
     }));
   };
 
-  // ✅ Handle Form Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ optional: block submit if role not selected
-    if (!employee.roleId) {
-      alert("Please select a role");
+
+    // ✅ basic validation
+    if (employee.password !== employee.confirmPassword) {
+      alert("❌ Password and Confirm Password do not match");
       return;
     }
 
     try {
-      // ✅ IMPORTANT: POST to /api/users (same as table)
-      const response = await fetch("http://localhost:8080/api/users", {
+      const payload = {
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        password: employee.password,
+        confirmPassword: employee.confirmPassword,
+        roleid: Number(employee.roleid),
+      };
+
+      const res = await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: employee.firstName,
-          lastName: employee.lastName,
-          email: employee.email,
-          password: employee.password,
-          roleid: employee.roleId, // ✅ table uses roleid
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const msg = await response.text();
-        alert(msg || "❌ Failed to Add Employee!");
-        return;
-      }
+      const message = await res.text();
+
+if (!res.ok) {
+  alert("❌ " + message);  
+  return;
+}
+
+alert("✅ " + message);
 
       alert("✅ Employee Added Successfully!");
 
-      // ✅ go back to list (table will fetch again if you refresh or you can click refresh btn)
-      navigate("/admin/users");
-    } catch (error) {
-      console.error("Error:", error);
-      alert("⚠️ Server Error!");
+      // ✅ Go back to users list and tell it to refresh
+      navigate("/admin/users", { state: { refresh: true } });
+    } catch (err) {
+      console.error(err);
+      alert("⚠️ Server Error! Check backend.");
     }
   };
 
@@ -135,23 +126,28 @@ const AddEmployee = () => {
           required
         />
 
-        <select
-          name="roleName"
-          value={employee.roleName}
-          onChange={handleRoleChange}
+        <input
+          type="password"
+          name="confirmPassword"
+          placeholder="Confirm Password"
+          value={employee.confirmPassword}
+          onChange={handleChange}
           required
-        >
+        />
+
+        {/* ✅ Role Dropdown (RoleID) */}
+        <select value={employee.roleid} onChange={handleRoleChange} required>
           <option value="">-- Select Role --</option>
-          {roles.map((role) => (
-            <option key={role.roleId} value={role.roleName}>
-              {role.roleName}
+          {roles.map((r) => (
+            <option key={r.roleId} value={r.roleId}>
+              {r.roleName}
             </option>
           ))}
         </select>
 
-        {employee.roleId && (
+        {employee.roleid && (
           <p className="role-id-display">
-            ✅ Role ID Assigned: <b>{employee.roleId}</b>
+            ✅ Role ID Assigned: <b>{employee.roleid}</b>
           </p>
         )}
 
@@ -159,6 +155,4 @@ const AddEmployee = () => {
       </form>
     </div>
   );
-};
-
-export default AddEmployee;
+}

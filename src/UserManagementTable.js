@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ NEW
+import { useNavigate, useLocation } from "react-router-dom";
 import "./UserManagementTable.css";
 
 const API = "http://localhost:8080/api/users";
 
 export default function UserManagementTable() {
-  const navigate = useNavigate(); // ✅ NEW
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [users, setUsers] = useState([]);
   const [query, setQuery] = useState("");
@@ -33,9 +34,20 @@ export default function UserManagementTable() {
     }
   };
 
+  /* First load */
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  /* ✅ Auto refresh when coming back from AddEmployee */
+  useEffect(() => {
+    if (location.state?.refresh) {
+      fetchUsers();
+
+      // ✅ Clear navigation state to avoid refreshing again on next visit
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   /* ================= SEARCH FILTER ================= */
   const filtered = useMemo(() => {
@@ -116,7 +128,7 @@ export default function UserManagementTable() {
       <div className="um-head">
         <h3>User Management</h3>
 
-        {/* ✅ NEW: Right Side Controls */}
+        {/* ✅ Right Side Controls */}
         <div className="um-head-actions">
           <input
             className="um-search"
@@ -125,16 +137,17 @@ export default function UserManagementTable() {
             onChange={(e) => setQuery(e.target.value)}
           />
 
-          {/* ✅ NEW: Add Employee Button */}
+          {/* ✅ Add Employee Button */}
           <button
             className="um-btn add"
             onClick={() => navigate("/admin/add-employee")}
+            type="button"
           >
             ➕ Add Employee
           </button>
 
-          {/* ✅ Optional Refresh Button */}
-          <button className="um-btn refresh" onClick={fetchUsers}>
+          {/* ✅ Refresh */}
+          <button className="um-btn refresh" onClick={fetchUsers} type="button">
             🔄 Refresh
           </button>
         </div>
@@ -180,6 +193,7 @@ export default function UserManagementTable() {
                         <button
                           className="um-btn edit"
                           onClick={() => setEditing({ ...u })}
+                          type="button"
                         >
                           Edit
                         </button>
@@ -187,6 +201,7 @@ export default function UserManagementTable() {
                         <button
                           className="um-btn delete"
                           onClick={() => deleteUser(u.id)}
+                          type="button"
                         >
                           Delete
                         </button>
@@ -250,11 +265,12 @@ export default function UserManagementTable() {
               <button
                 className="um-btn delete"
                 onClick={() => setEditing(null)}
+                type="button"
               >
                 Cancel
               </button>
 
-              <button className="um-btn edit" onClick={saveEdit}>
+              <button className="um-btn edit" onClick={saveEdit} type="button">
                 Save
               </button>
             </div>

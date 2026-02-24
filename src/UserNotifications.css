@@ -1,0 +1,79 @@
+.notif-page{
+  padding: 22px;
+  background:#0b1220;
+  min-height:100vh;
+  color:#eaf0ff;
+}
+
+.notif-title{
+  margin: 0 0 16px;
+}
+
+.notif-empty{
+  opacity:.8;
+  padding: 14px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  max-width: 900px;
+}
+
+.notif-list{
+  display: grid;
+  gap: 14px;
+  max-width: 900px;
+}
+
+.notif-card{
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+}
+
+.notif-top{
+  display:flex;
+  justify-content: space-between;
+  align-items:flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.notif-type{
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.notif-sub{
+  opacity: .8;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.notif-body{
+  display:grid;
+  gap: 6px;
+  font-size: 14px;
+  opacity: .95;
+}
+
+/* status badges */
+.badge{
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,.14);
+}
+
+.badge.pending{
+  background: rgba(255, 206, 86, .18);
+}
+
+.badge.approved{
+  background: rgba(75, 192, 192, .18);
+}
+
+.badge.rejected{
+  background: rgba(255, 99, 132, .18);
+}

@@ -2,39 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./UserDashboard.css";
-import UserNotifications from "./UserNotifications"; // ✅ same folder (adjust path if needed)
 
 const API_BASE = "http://localhost:8080";
-
-/**
- * Recommended backend endpoints:
- *
- * PROFILE:
- * - GET  /api/profile?loginEmail=a@b.com
- * - POST /api/profile
- *   body: { profile: {...}, organization: {...} | null }
- *
- * PRODUCTS / ISO:
- * - GET  /api/products
- *   -> returns: [{ id:"ISO9001", title:"ISO 9001", desc:"...", active:true }, ...]
- *   (OR your entity style: { isoCode, isoName, description, active })
- *
- * - GET  /api/iso-standards (optional fallback)
- *
- * USER SELECTED PRODUCTS (optional):
- * - GET  /api/user/products?loginEmail=a@b.com
- *   -> returns: ["ISO9001","ISO27001"] OR { products: ["ISO9001"] }
- *
- * - POST /api/user/products
- *   body: { loginEmail: "a@b.com", products: ["ISO9001","ISO27001"] }
- *
- * AUDIT:
- * - POST /api/audit-details
- *   body: { ...form }
- *
- * NOTIFICATIONS:
- * - GET /api/audits/my?profileId=123
- */
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -47,7 +16,6 @@ const UserDashboard = () => {
 
   const [activeTab, setActiveTab] = useState("profile");
 
-  // ✅ if profile already saved once, open products directly (optional)
   useEffect(() => {
     const openTab = localStorage.getItem("openTab");
     if (openTab) {
@@ -73,26 +41,19 @@ const UserDashboard = () => {
         );
 
       case "products":
-        return (
-          <ProductsSection
-            onAfterSave={() => {
-              setActiveTab("audit");
-            }}
-          />
-        );
+        return <ProductsSection onAfterSave={() => setActiveTab("audit")} />;
 
       case "audit":
-        return (
-          <AuditRequestSection
-            onSubmitted={() => {
-              setActiveTab("notifications");
-            }}
-          />
-        );
+        return <AuditRequestSection onSubmitted={() => setActiveTab("notifications")} />;
+
+      case "documents":
+        return <DocumentUploadSection />;
 
       case "notifications":
         return (
-          <UserNotifications />
+          <h3 className="coming-soon">
+            🔔 Notifications Section (Coming Soon)
+          </h3>
         );
 
       default:
@@ -102,7 +63,6 @@ const UserDashboard = () => {
 
   return (
     <div className="dashboard">
-      {/* ===== TOP HEADER ===== */}
       <header className="topbar">
         <div className="topbar-left" />
 
@@ -118,7 +78,6 @@ const UserDashboard = () => {
         </div>
       </header>
 
-      {/* ===== TABS ===== */}
       <div className="tabs-wrap">
         <div className="tabs">
           <button
@@ -145,7 +104,6 @@ const UserDashboard = () => {
             Audit Request
           </button>
 
-          {/* ✅ NEW TAB */}
           <button
             className={`tab ${activeTab === "documents" ? "active" : ""}`}
             onClick={() => setActiveTab("documents")}
@@ -164,7 +122,6 @@ const UserDashboard = () => {
         </div>
       </div>
 
-      {/* ===== CONTENT ===== */}
       <main className="content">{renderContent()}</main>
     </div>
   );
@@ -175,7 +132,6 @@ const UserDashboard = () => {
 const ProfileSection = ({ onProfileSaved }) => {
   const [openAddress, setOpenAddress] = useState(true);
   const [loading, setLoading] = useState(false);
-
   const [isEditing, setIsEditing] = useState(false);
 
   const countries = useMemo(() => ["Select", "India", "USA", "UK", "Canada"], []);
@@ -187,7 +143,7 @@ const ProfileSection = ({ onProfileSaved }) => {
   const loginEmail = localStorage.getItem("username") || "";
 
   const [profile, setProfile] = useState({
-    loginEmail: loginEmail,
+    loginEmail,
     notificationEmail: "",
     firstName: "",
     lastName: "",
@@ -235,17 +191,14 @@ const ProfileSection = ({ onProfileSaved }) => {
 
       const data = await res.json();
 
-      // ✅ supports both: {profile:{...},organization:{...}} OR direct profile object
       const p = data.profile ? data.profile : data;
       const o = data.organization ? data.organization : {};
 
       setProfile((prev) => ({ ...prev, ...p, loginEmail }));
       setOrganization((prev) => ({ ...prev, ...o }));
 
-      // ✅ store profileId for notifications page
-      if (p?.profileId) localStorage.setItem("profileId", String(p.profileId));
-
-      localStorage.setItem("profileData", JSON.stringify(p));
+      // ✅ Store for audit auto-fill
+      localStorage.setItem("profileData", JSON.stringify({ ...p, loginEmail }));
       localStorage.setItem("orgData", JSON.stringify(o));
     } catch (err) {
       console.error("Fetch profile error:", err);
@@ -263,10 +216,7 @@ const ProfileSection = ({ onProfileSaved }) => {
     e.preventDefault();
 
     const payload = {
-      profile: {
-        ...profile,
-        loginEmail: loginEmail,
-      },
+      profile: { ...profile, loginEmail },
       organization:
         organization.company?.trim() ||
         organization.address?.trim() ||
@@ -298,7 +248,6 @@ const ProfileSection = ({ onProfileSaved }) => {
       setIsEditing(false);
       setBackup(null);
 
-      // ✅ Store latest for audit auto-fill
       localStorage.setItem("profileData", JSON.stringify(profile));
       localStorage.setItem("orgData", JSON.stringify(organization));
 
@@ -344,11 +293,7 @@ const ProfileSection = ({ onProfileSaved }) => {
 
         <div className="profile-actions">
           {!isEditing ? (
-            <button
-              type="button"
-              className="edit-profile-btn"
-              onClick={startEdit}
-            >
+            <button type="button" className="edit-profile-btn" onClick={startEdit}>
               ✏️ Edit Profile
             </button>
           ) : (
@@ -439,30 +384,15 @@ const ProfileSection = ({ onProfileSaved }) => {
 
               <div className="col">
                 <Row label="Phone">
-                  <input
-                    name="phone"
-                    value={profile.phone}
-                    onChange={onProfileChange}
-                    disabled={disabled}
-                  />
+                  <input name="phone" value={profile.phone} onChange={onProfileChange} disabled={disabled} />
                 </Row>
 
                 <Row label="Mobile">
-                  <input
-                    name="mobile"
-                    value={profile.mobile}
-                    onChange={onProfileChange}
-                    disabled={disabled}
-                  />
+                  <input name="mobile" value={profile.mobile} onChange={onProfileChange} disabled={disabled} />
                 </Row>
 
                 <Row label="Fax">
-                  <input
-                    name="fax"
-                    value={profile.fax}
-                    onChange={onProfileChange}
-                    disabled={disabled}
-                  />
+                  <input name="fax" value={profile.fax} onChange={onProfileChange} disabled={disabled} />
                 </Row>
 
                 <Row label="Organization size">
@@ -495,12 +425,7 @@ const ProfileSection = ({ onProfileSaved }) => {
                 </Row>
 
                 <Row label="Job title">
-                  <input
-                    name="jobTitle"
-                    value={profile.jobTitle}
-                    onChange={onProfileChange}
-                    disabled={disabled}
-                  />
+                  <input name="jobTitle" value={profile.jobTitle} onChange={onProfileChange} disabled={disabled} />
                 </Row>
               </div>
             </div>
@@ -523,12 +448,7 @@ const ProfileSection = ({ onProfileSaved }) => {
               <div className="two-col">
                 <div className="col">
                   <Row label="Company">
-                    <input
-                      name="company"
-                      value={organization.company}
-                      onChange={onOrgChange}
-                      disabled={disabled}
-                    />
+                    <input name="company" value={organization.company} onChange={onOrgChange} disabled={disabled} />
                   </Row>
 
                   <Row label="Address">
@@ -553,12 +473,7 @@ const ProfileSection = ({ onProfileSaved }) => {
 
                 <div className="col">
                   <Row label="City">
-                    <input
-                      name="city"
-                      value={organization.city}
-                      onChange={onOrgChange}
-                      disabled={disabled}
-                    />
+                    <input name="city" value={organization.city} onChange={onOrgChange} disabled={disabled} />
                   </Row>
 
                   <Row label="Country">
@@ -575,12 +490,7 @@ const ProfileSection = ({ onProfileSaved }) => {
                   </Row>
 
                   <Row label="State">
-                    <input
-                      name="state"
-                      value={organization.state}
-                      onChange={onOrgChange}
-                      disabled={disabled}
-                    />
+                    <input name="state" value={organization.state} onChange={onOrgChange} disabled={disabled} />
                   </Row>
                 </div>
               </div>
@@ -603,18 +513,21 @@ const ProfileSection = ({ onProfileSaved }) => {
   );
 };
 
-/* ================= PRODUCTS SECTION (WITH SEARCH) ================= */
+/* ================= PRODUCTS SECTION (STATIC + SEARCH) ================= */
 
 const ProductsSection = ({ onAfterSave }) => {
   const loginEmail = localStorage.getItem("username") || "";
 
-  const isoProducts = [
-    { id: "ISO9001", title: "ISO 9001", desc: "Quality Management System (QMS)" },
-    { id: "ISO14001", title: "ISO 14001", desc: "Environmental Management System (EMS)" },
-    { id: "ISO45001", title: "ISO 45001", desc: "Occupational Health & Safety (OH&S)" },
-    { id: "ISO27001", title: "ISO 27001", desc: "Information Security (ISMS)" },
-    { id: "ISO22000", title: "ISO 22000", desc: "Food Safety (FSMS)" },
-  ];
+  const isoProducts = useMemo(
+    () => [
+      { id: "ISO9001", title: "ISO 9001", desc: "Quality Management System (QMS)" },
+      { id: "ISO14001", title: "ISO 14001", desc: "Environmental Management System (EMS)" },
+      { id: "ISO45001", title: "ISO 45001", desc: "Occupational Health & Safety (OH&S)" },
+      { id: "ISO27001", title: "ISO 27001", desc: "Information Security (ISMS)" },
+      { id: "ISO22000", title: "ISO 22000", desc: "Food Safety (FSMS)" },
+    ],
+    []
+  );
 
   const [selected, setSelected] = useState(() => {
     const saved = localStorage.getItem("selectedIsoProducts");
@@ -631,32 +544,20 @@ const ProductsSection = ({ onAfterSave }) => {
     );
   }, [query, isoProducts]);
 
-  const toggle = (isoCode) => {
-    setSelected((prev) =>
-      prev.includes(isoCode)
-        ? prev.filter((x) => x !== isoCode)
-        : [...prev, isoCode]
-    );
+  const toggle = (id) => {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const saveToBackend = async () => {
+  const handleSave = async () => {
+    localStorage.setItem("selectedIsoProducts", JSON.stringify(selected));
+
+    // optional backend save
     try {
-      await fetch("http://localhost:8080/api/user/products", {
+      await fetch(`${API_BASE}/api/user/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginEmail, products: selected }),
       });
-    } catch (e) {
-      // ignore if endpoint doesn't exist yet
-    }
-  };
-
-  const handleSave = async () => {
-    const products = selected;
-    localStorage.setItem("selectedIsoProducts", JSON.stringify(products));
-
-    try {
-      await saveToBackend(products);
     } catch (e) {
       // ignore if endpoint doesn't exist
     }
@@ -670,15 +571,7 @@ const ProductsSection = ({ onAfterSave }) => {
       <div className="products-header">
         <div>
           <h2 className="page-title">ISO Products</h2>
-          <div className="page-hint">
-            Search and select ISO standards.
-            {productsLoading ? " (Loading...)" : ""}
-          </div>
-          {productsError ? (
-            <div className="page-hint" style={{ opacity: 0.9 }}>
-              {productsError}
-            </div>
-          ) : null}
+          <div className="page-hint">Search and select ISO standards.</div>
         </div>
 
         <div className="product-search">
@@ -701,21 +594,19 @@ const ProductsSection = ({ onAfterSave }) => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="no-results">Loading ISO standards...</div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="no-results">
           No products found for <b>{query}</b>
         </div>
       ) : (
         <div className="products-grid">
           {filtered.map((p) => {
-            const active = selected.includes(p.isoCode);
+            const active = selected.includes(p.id);
             return (
               <div
-                key={p.isoId ?? p.isoCode}
+                key={p.id}
                 className={`product-card ${active ? "selected" : ""}`}
-                onClick={() => toggle(p.isoCode)}
+                onClick={() => toggle(p.id)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -723,7 +614,7 @@ const ProductsSection = ({ onAfterSave }) => {
                 }}
               >
                 <div className="product-top">
-                  <h3 className="product-title">{p.isoCode}</h3>
+                  <h3 className="product-title">{p.title}</h3>
                   <span className={`chip ${active ? "chip-on" : ""}`}>
                     {active ? "Selected" : "Select"}
                   </span>
@@ -732,11 +623,7 @@ const ProductsSection = ({ onAfterSave }) => {
                 <p className="muted">{p.desc}</p>
 
                 <div className="check-row" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={active}
-                    onChange={() => toggle(p.isoCode)}
-                  />
+                  <input type="checkbox" checked={active} onChange={() => toggle(p.id)} />
                   <span>Include</span>
                 </div>
               </div>
@@ -746,11 +633,7 @@ const ProductsSection = ({ onAfterSave }) => {
       )}
 
       <div className="products-actions">
-        <button
-          className="update-profile-btn"
-          onClick={handleSave}
-          disabled={selected.length === 0}
-        >
+        <button className="update-profile-btn" onClick={handleSave} disabled={selected.length === 0}>
           Save & Continue →
         </button>
       </div>
@@ -758,21 +641,42 @@ const ProductsSection = ({ onAfterSave }) => {
   );
 };
 
-/* ================= AUDIT REQUEST FORM (AUTO-FILL + ISO STANDARDS SECTION) ================= */
+/* ================= AUDIT REQUEST FORM ================= */
 
-const AuditRequestSection = () => {
+const AuditRequestSection = ({ onSubmitted }) => {
   const loginEmail = localStorage.getItem("username") || "";
 
-  const isoStandardOptions = useMemo(
-    () => [
-      { id: "ISO9001", label: "ISO 9001 (QMS)" },
-      { id: "ISO14001", label: "ISO 14001 (EMS)" },
-      { id: "ISO45001", label: "ISO 45001 (OH&S)" },
-      { id: "ISO27001", label: "ISO 27001 (ISMS)" },
-      { id: "ISO22000", label: "ISO 22000 (FSMS)" },
-    ],
-    []
-  );
+  const [isoStandardOptions, setIsoStandardOptions] = useState([
+    { id: "ISO9001", label: "ISO 9001 (QMS)" },
+    { id: "ISO14001", label: "ISO 14001 (EMS)" },
+    { id: "ISO45001", label: "ISO 45001 (OH&S)" },
+    { id: "ISO27001", label: "ISO 27001 (ISMS)" },
+    { id: "ISO22000", label: "ISO 22000 (FSMS)" },
+  ]);
+  const [isoLoading, setIsoLoading] = useState(false);
+
+  useEffect(() => {
+    const loadIso = async () => {
+      try {
+        setIsoLoading(true);
+        const res = await fetch(`${API_BASE}/api/iso-standards`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const normalized = Array.isArray(data)
+          ? data.map((x) => ({
+              id: x.id || x.isoCode || x.code,
+              label: x.label || x.isoName || x.title || x.id || x.isoCode,
+            })).filter(x => x.id)
+          : [];
+        if (normalized.length) setIsoStandardOptions(normalized);
+      } catch (e) {
+        // keep fallback
+      } finally {
+        setIsoLoading(false);
+      }
+    };
+    loadIso();
+  }, []);
 
   const selectedFromProducts =
     JSON.parse(localStorage.getItem("selectedIsoProducts") || "[]") || [];
@@ -786,12 +690,10 @@ const AuditRequestSection = () => {
 
   const [form, setForm] = useState({
     loginEmail,
-
     companyName: storedOrg.company || "",
     contactPerson: contactPerson || "",
     designation: storedProfile.jobTitle || "",
     phone: storedProfile.mobile || storedProfile.phone || "",
-
     address: storedOrg.address || "",
     city: storedOrg.city || "",
     state: storedOrg.state || "",
@@ -800,9 +702,7 @@ const AuditRequestSection = () => {
         ? storedOrg.country
         : "India",
     postalCode: storedOrg.postalCode || "",
-
     isoStandards: selectedFromProducts,
-
     auditType: "Internal Audit",
     preferredDate: "",
     duration: "1 Day",
@@ -811,63 +711,19 @@ const AuditRequestSection = () => {
     notes: "",
   });
 
-  useEffect(() => {
-    const loadIso = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/iso-standards`);
-        if (!res.ok) throw new Error("Failed to load ISO standards");
-        const data = await res.json();
-        setIsoStandardOptions(Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.error(e);
-        setIsoStandardOptions([]);
-      } finally {
-        setLoadingIso(false);
-      }
-    };
-    loadIso();
-  }, []);
-
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
   };
 
-  const toggleIsoStandard = (isoCode) => {
+  const toggleIsoStandard = (id) => {
     setForm((f) => {
       const exists = (f.isoStandards || []).includes(id);
       const next = exists ? f.isoStandards.filter((x) => x !== id) : [...(f.isoStandards || []), id];
-      // also keep products page synced (optional)
       localStorage.setItem("selectedIsoProducts", JSON.stringify(next));
       return { ...f, isoStandards: next };
     });
   };
-
-  useEffect(() => {
-    const p = JSON.parse(localStorage.getItem("profileData") || "{}");
-    const o = JSON.parse(localStorage.getItem("orgData") || "{}");
-    const products = JSON.parse(
-      localStorage.getItem("selectedIsoProducts") || "[]"
-    );
-
-    const person =
-      p.displayName || `${p.firstName || ""} ${p.lastName || ""}`.trim();
-
-    setForm((f) => ({
-      ...f,
-      loginEmail,
-      companyName: o.company || f.companyName,
-      contactPerson: person || f.contactPerson,
-      designation: p.jobTitle || f.designation,
-      phone: p.mobile || p.phone || f.phone,
-      address: o.address || f.address,
-      city: o.city || f.city,
-      state: o.state || f.state,
-      country: o.country && o.country !== "Select" ? o.country : f.country,
-      postalCode: o.postalCode || f.postalCode,
-      isoStandards: products?.length ? products : f.isoStandards,
-    }));
-  }, [loginEmail]);
 
   const submitAuditRequest = async (e) => {
     e.preventDefault();
@@ -892,18 +748,6 @@ const AuditRequestSection = () => {
 
       alert(msg || "Audit request submitted ✅");
 
-      // keep auto-filled info, clear audit-specific fields
-      setForm((f) => ({
-        ...f,
-        auditType: "Internal Audit",
-        preferredDate: "",
-        duration: "1 Day",
-        auditLocation: "",
-        scope: "",
-        notes: "",
-      }));
-
-      // ✅ go to notifications tab
       if (typeof onSubmitted === "function") onSubmitted();
     } catch (err) {
       console.error(err);
@@ -917,109 +761,19 @@ const AuditRequestSection = () => {
         <div>
           <h2 className="page-title">Audit Request Form</h2>
           <div className="page-hint">
-            Auto-filled from Profile. Selected ISO:{" "}
-            <b>{form.isoStandards?.length ? form.isoStandards.join(", ") : "None"}</b>
+            Selected ISO: <b>{form.isoStandards?.length ? form.isoStandards.join(", ") : "None"}</b>
+            {isoLoading ? " (Loading ISO list...)" : ""}
           </div>
         </div>
       </div>
 
       <form className="panel audit-form" onSubmit={submitAuditRequest}>
         <div className="panel-body">
-          {/* ===== Applicant Info ===== */}
-          <section className="panel" style={{ marginBottom: 14 }}>
-            <div className="panel-body">
-              <h3 style={{ margin: 0, marginBottom: 10 }}>
-                Applicant Information
-              </h3>
-
-              <div className="two-col">
-                <div className="col">
-                  <Row label="Login Email">
-                    <input name="loginEmail" value={form.loginEmail} disabled />
-                  </Row>
-
-                  <Row label="Company Name" required>
-                    <input
-                      name="companyName"
-                      value={form.companyName}
-                      onChange={onChange}
-                      required
-                    />
-                  </Row>
-
-                  <Row label="Contact Person" required>
-                    <input
-                      name="contactPerson"
-                      value={form.contactPerson}
-                      onChange={onChange}
-                      required
-                    />
-                  </Row>
-
-                  <Row label="Designation">
-                    <input
-                      name="designation"
-                      value={form.designation}
-                      onChange={onChange}
-                    />
-                  </Row>
-                </div>
-
-                <div className="col">
-                  <Row label="Phone" required>
-                    <input
-                      name="phone"
-                      value={form.phone}
-                      onChange={onChange}
-                      required
-                    />
-                  </Row>
-
-                  <Row label="Address">
-                    <textarea
-                      name="address"
-                      value={form.address}
-                      onChange={onChange}
-                      rows={3}
-                    />
-                  </Row>
-
-                  <Row label="City">
-                    <input name="city" value={form.city} onChange={onChange} />
-                  </Row>
-
-                  <Row label="State">
-                    <input
-                      name="state"
-                      value={form.state}
-                      onChange={onChange}
-                    />
-                  </Row>
-
-                  <Row label="Country">
-                    <input
-                      name="country"
-                      value={form.country}
-                      onChange={onChange}
-                    />
-                  </Row>
-
-                  <Row label="Postal Code">
-                    <input
-                      name="postalCode"
-                      value={form.postalCode}
-                      onChange={onChange}
-                    />
-                  </Row>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* ===== ISO Standards Selection (DYNAMIC) ===== */}
+          {/* ISO Standards */}
           <section className="panel" style={{ marginBottom: 14 }}>
             <div className="panel-body">
               <h3 style={{ margin: 0, marginBottom: 10 }}>ISO Standard Selection</h3>
+
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
                 {isoStandardOptions.map((opt) => {
                   const checked = (form.isoStandards || []).includes(opt.id);
@@ -1038,23 +792,16 @@ const AuditRequestSection = () => {
                         userSelect: "none",
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleIsoStandard(opt.id)}
-                      />
+                      <input type="checkbox" checked={checked} onChange={() => toggleIsoStandard(opt.id)} />
                       <span style={{ fontWeight: 800 }}>{opt.label}</span>
                     </label>
                   );
                 })}
               </div>
-              <div style={{ marginTop: 10, color: "rgba(234,240,255,0.72)", fontSize: 12 }}>
-                Tip: You can change ISO selections here (it will also sync with Products selection).
-              </div>
             </div>
           </section>
 
-          {/* ===== Audit Details ===== */}
+          {/* Audit Details */}
           <section className="panel" style={{ marginBottom: 14 }}>
             <div className="panel-body">
               <h3 style={{ margin: 0, marginBottom: 10 }}>Audit Details</h3>
@@ -1062,21 +809,11 @@ const AuditRequestSection = () => {
               <div className="two-col">
                 <div className="col">
                   <Row label="Preferred Date" required>
-                    <input
-                      type="date"
-                      name="preferredDate"
-                      value={form.preferredDate}
-                      onChange={onChange}
-                      required
-                    />
+                    <input type="date" name="preferredDate" value={form.preferredDate} onChange={onChange} required />
                   </Row>
 
                   <Row label="Audit Type" required>
-                    <select
-                      name="auditType"
-                      value={form.auditType}
-                      onChange={onChange}
-                    >
+                    <select name="auditType" value={form.auditType} onChange={onChange}>
                       <option>Internal Audit</option>
                       <option>External Audit</option>
                       <option>Surveillance Audit</option>
@@ -1085,11 +822,7 @@ const AuditRequestSection = () => {
                   </Row>
 
                   <Row label="Duration">
-                    <select
-                      name="duration"
-                      value={form.duration}
-                      onChange={onChange}
-                    >
+                    <select name="duration" value={form.duration} onChange={onChange}>
                       <option>1 Day</option>
                       <option>2 Days</option>
                       <option>3 Days</option>
@@ -1110,23 +843,11 @@ const AuditRequestSection = () => {
                   </Row>
 
                   <Row label="Scope of Certification">
-                    <textarea
-                      name="scope"
-                      value={form.scope}
-                      onChange={onChange}
-                      rows={3}
-                      placeholder="Describe activities, products, services covered..."
-                    />
+                    <textarea name="scope" value={form.scope} onChange={onChange} rows={3} />
                   </Row>
 
                   <Row label="Notes">
-                    <textarea
-                      name="notes"
-                      value={form.notes}
-                      onChange={onChange}
-                      rows={3}
-                      placeholder="Any special requirements..."
-                    />
+                    <textarea name="notes" value={form.notes} onChange={onChange} rows={3} />
                   </Row>
                 </div>
               </div>
@@ -1144,88 +865,33 @@ const AuditRequestSection = () => {
   );
 };
 
-/* ================= DOCUMENT UPLOAD SECTION (NEW) ================= */
+/* ================= DOCUMENT UPLOAD SECTION ================= */
 
 const DocumentUploadSection = () => {
   const loginEmail = localStorage.getItem("username") || "";
 
-  const selectedIso =
-    JSON.parse(localStorage.getItem("selectedIsoProducts") || "[]") || [];
-
-  // Local storage key (per user)
+  const selectedIso = JSON.parse(localStorage.getItem("selectedIsoProducts") || "[]") || [];
   const storageKey = `uploadedDocs:${loginEmail}`;
 
-  // Allowed types
-  const allowedExt = useMemo(
-    () => ["pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png"],
-    []
-  );
-  const maxBytes = 10 * 1024 * 1024; // 10MB
+  const allowedExt = useMemo(() => ["pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png"], []);
+  const maxBytes = 10 * 1024 * 1024;
 
-  // ✅ Document templates (mandatory + ISO-specific)
   const docTemplates = useMemo(() => {
     const common = [
       { docType: "Company Registration / GST / PAN", required: true, isoCode: "ALL" },
       { docType: "Organization Chart", required: true, isoCode: "ALL" },
       { docType: "Scope Statement", required: true, isoCode: "ALL" },
       { docType: "Process Map / Flow", required: true, isoCode: "ALL" },
-      { docType: "Internal Audit Report (latest)", required: false, isoCode: "ALL" },
-      { docType: "Management Review Minutes (latest)", required: false, isoCode: "ALL" },
-      { docType: "Corrective Action / CAPA Records", required: false, isoCode: "ALL" },
-      { docType: "Training Records", required: false, isoCode: "ALL" },
     ];
+    const iso9001 = [{ docType: "Quality Policy & Objectives", required: true, isoCode: "ISO9001" }];
+    const iso27001 = [{ docType: "Statement of Applicability (SoA)", required: true, isoCode: "ISO27001" }];
 
-    const iso9001 = [
-      { docType: "Quality Policy & Objectives", required: true, isoCode: "ISO9001" },
-      { docType: "SOPs / Work Instructions", required: false, isoCode: "ISO9001" },
-      { docType: "Customer Complaints / Feedback Records", required: false, isoCode: "ISO9001" },
-      { docType: "Supplier Evaluation Records", required: false, isoCode: "ISO9001" },
-    ];
-
-    const iso27001 = [
-      { docType: "ISMS Scope Document", required: true, isoCode: "ISO27001" },
-      { docType: "Asset Inventory", required: true, isoCode: "ISO27001" },
-      { docType: "Risk Assessment & Treatment Plan", required: true, isoCode: "ISO27001" },
-      { docType: "Statement of Applicability (SoA)", required: true, isoCode: "ISO27001" },
-      { docType: "Access Control Policy", required: false, isoCode: "ISO27001" },
-    ];
-
-    const iso14001 = [
-      { docType: "Environmental Policy", required: true, isoCode: "ISO14001" },
-      { docType: "Aspects & Impacts Register", required: true, isoCode: "ISO14001" },
-      { docType: "Legal Compliance Register", required: false, isoCode: "ISO14001" },
-      { docType: "Waste Management Records", required: false, isoCode: "ISO14001" },
-    ];
-
-    const iso45001 = [
-      { docType: "OH&S Policy", required: true, isoCode: "ISO45001" },
-      { docType: "Hazard Identification & Risk Assessment (HIRA)", required: true, isoCode: "ISO45001" },
-      { docType: "Incident/Accident Register", required: false, isoCode: "ISO45001" },
-      { docType: "Emergency Response Plan", required: false, isoCode: "ISO45001" },
-    ];
-
-    const iso22000 = [
-      { docType: "Food Safety Policy", required: true, isoCode: "ISO22000" },
-      { docType: "HACCP Plan", required: true, isoCode: "ISO22000" },
-      { docType: "PRP Records (Hygiene, Pest, Cleaning)", required: false, isoCode: "ISO22000" },
-      { docType: "Traceability Records", required: false, isoCode: "ISO22000" },
-    ];
-
-    // include only selected standards
     const selectedSet = new Set(selectedIso);
-
-    const isoSpecific = [
-      ...iso9001,
-      ...iso27001,
-      ...iso14001,
-      ...iso45001,
-      ...iso22000,
-    ].filter((d) => selectedSet.has(d.isoCode));
+    const isoSpecific = [...iso9001, ...iso27001].filter((d) => selectedSet.has(d.isoCode));
 
     return [...common, ...isoSpecific];
   }, [selectedIso]);
 
-  // uploaded docs metadata (saved in localStorage)
   const [uploaded, setUploaded] = useState(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -1239,44 +905,12 @@ const DocumentUploadSection = () => {
     localStorage.setItem(storageKey, JSON.stringify(uploaded));
   }, [uploaded, storageKey]);
 
-  const getStatus = (docType) => {
-    return uploaded?.[docType] ? "Uploaded" : "Pending";
-  };
-
   const validateFile = (file) => {
     if (!file) return "No file selected";
     if (file.size > maxBytes) return "File too large (max 10MB)";
     const ext = (file.name.split(".").pop() || "").toLowerCase();
-    if (!allowedExt.includes(ext))
-      return `Invalid file type .${ext} (allowed: ${allowedExt.join(", ")})`;
+    if (!allowedExt.includes(ext)) return `Invalid file type .${ext}`;
     return null;
-  };
-
-  // ✅ optional backend upload (multipart)
-  const uploadToBackend = async ({ file, docType, isoCode }) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("loginEmail", loginEmail);
-    fd.append("docType", docType);
-    fd.append("isoCode", isoCode);
-
-    // If you have auditId, you can also send it:
-    // fd.append("auditId", "123");
-
-    // IMPORTANT: do NOT set Content-Type manually for FormData
-    const res = await fetch(`${API_BASE}/api/documents/upload`, {
-      method: "POST",
-      body: fd,
-    });
-
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(t || "Upload failed");
-    }
-
-    // backend can return url/path
-    const data = await res.json().catch(() => null);
-    return data;
   };
 
   const onPickFile = async (template, file) => {
@@ -1286,35 +920,15 @@ const DocumentUploadSection = () => {
       return;
     }
 
-    // optimistic local update
     const now = new Date().toISOString();
     setUploaded((prev) => ({
       ...prev,
-      [template.docType]: {
-        fileName: file.name,
-        isoCode: template.isoCode,
-        uploadedAt: now,
-      },
+      [template.docType]: { fileName: file.name, isoCode: template.isoCode, uploadedAt: now },
     }));
-
-    // try backend upload (optional)
-    try {
-      await uploadToBackend({
-        file,
-        docType: template.docType,
-        isoCode: template.isoCode,
-      });
-      // if backend returns URL, you can store it too
-    } catch (e) {
-      // keep local status, but inform user backend is not ready
-      console.log("Backend upload failed (optional):", e.message);
-    }
   };
 
   const requiredCount = docTemplates.filter((d) => d.required).length;
-  const requiredUploadedCount = docTemplates
-    .filter((d) => d.required)
-    .filter((d) => uploaded?.[d.docType]).length;
+  const requiredUploadedCount = docTemplates.filter((d) => d.required).filter((d) => uploaded?.[d.docType]).length;
 
   return (
     <div className="products-wrap">
@@ -1342,7 +956,7 @@ const DocumentUploadSection = () => {
             <div style={{ display: "grid", gap: 10 }}>
               {docTemplates.map((t) => {
                 const meta = uploaded?.[t.docType];
-                const status = getStatus(t.docType);
+                const status = meta ? "Uploaded" : "Pending";
 
                 return (
                   <div
@@ -1354,33 +968,18 @@ const DocumentUploadSection = () => {
                       background: "rgba(255,255,255,0.05)",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 10,
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
-                    >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                       <div>
                         <div style={{ fontWeight: 900 }}>
-                          {t.docType}{" "}
-                          {t.required && <span className="req">*</span>}
+                          {t.docType} {t.required && <span className="req">*</span>}
                         </div>
                         <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>
-                          For: <b>{t.isoCode === "ALL" ? "All Standards" : t.isoCode}</b> •
-                          Allowed: {allowedExt.join(", ")} • Max 10MB
+                          For: <b>{t.isoCode === "ALL" ? "All Standards" : t.isoCode}</b> • Allowed: {allowedExt.join(", ")} • Max 10MB
                         </div>
                       </div>
 
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        <span
-                          className={`chip ${status === "Uploaded" ? "chip-on" : ""}`}
-                          style={{ whiteSpace: "nowrap" }}
-                        >
-                          {status}
-                        </span>
+                        <span className={`chip ${status === "Uploaded" ? "chip-on" : ""}`}>{status}</span>
 
                         <label
                           style={{
@@ -1402,7 +1001,7 @@ const DocumentUploadSection = () => {
                             onChange={(e) => {
                               const f = e.target.files?.[0];
                               if (f) onPickFile(t, f);
-                              e.target.value = ""; // reset
+                              e.target.value = "";
                             }}
                           />
                         </label>
@@ -1411,12 +1010,8 @@ const DocumentUploadSection = () => {
 
                     {meta && (
                       <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85 }}>
-                        <div>
-                          File: <b>{meta.fileName}</b>
-                        </div>
-                        <div>
-                          Uploaded: <b>{new Date(meta.uploadedAt).toLocaleString()}</b>
-                        </div>
+                        <div>File: <b>{meta.fileName}</b></div>
+                        <div>Uploaded: <b>{new Date(meta.uploadedAt).toLocaleString()}</b></div>
                       </div>
                     )}
                   </div>
@@ -1425,7 +1020,7 @@ const DocumentUploadSection = () => {
             </div>
 
             <div style={{ marginTop: 12, fontSize: 12, opacity: 0.8 }}>
-              <span className="req">*</span> Required documents (recommended before final review).
+              <span className="req">*</span> Required documents.
             </div>
           </div>
         </div>
@@ -1434,7 +1029,7 @@ const DocumentUploadSection = () => {
   );
 };
 
-/* ================= SHARED ROW COMPONENT ================= */
+/* ================= SHARED ROW ================= */
 
 const Row = ({ label, required, children }) => {
   return (

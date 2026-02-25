@@ -302,3 +302,51 @@
     grid-template-columns: 1fr;
   }
 }
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  text-align: left;
+}
+
+.admin-table th {
+  background: rgba(255,255,255,0.05);
+  font-weight: 600;
+}
+
+.status.pending {
+  background: #ffcc00;
+  color: black;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-input,
+.admin-select,
+.admin-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: #eaf0ff;
+  outline: none;
+}
+
+.admin-textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+.admin-input::placeholder,
+.admin-textarea::placeholder {
+  color: rgba(234,240,255,0.55);
+}

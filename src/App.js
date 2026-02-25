@@ -29,6 +29,10 @@ import AdminNC from "./AdminNC";
 import UserDashboard from "./UserDashboard";
 import StaffDashboard from "./StaffDashboard";
 
+/* ✅ NEW PAGES */
+import UserNotifications from "./UserNotifications";
+import AdminAuditRequests from "./AdminAuditRequests";
+
 function App() {
   return (
     <BrowserRouter>
@@ -55,11 +59,19 @@ function App() {
           <Route path="add-employee" element={<AddEmployee />} /> {/* /admin/add-employee */}
           <Route path="documents" element={<AdminDocuments />} /> {/* /admin/documents */}
           <Route path="audits" element={<AdminAudits />} /> {/* /admin/audits */}
+
+          {/* ✅ NEW: Admin Audit Requests page */}
+          <Route path="audit-requests" element={<AdminAuditRequests />} /> {/* /admin/audit-requests */}
+
           <Route path="nc" element={<AdminNC />} /> {/* /admin/nc */}
         </Route>
 
         {/* ================= USER / STAFF ROUTES ================= */}
         <Route path="/user" element={<UserDashboard />} />
+
+        {/* ✅ NEW: User Notifications page */}
+        <Route path="/user/notifications" element={<UserNotifications />} /> {/* /user/notifications */}
+
         <Route path="/staff" element={<StaffDashboard />} />
 
         {/* ================= 404 PAGE ================= */}

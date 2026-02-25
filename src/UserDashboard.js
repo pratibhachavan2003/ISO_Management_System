@@ -1,10 +1,40 @@
+// UserDashboard.js
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./UserDashboard.css";
+import UserNotifications from "./UserNotifications"; // ✅ same folder (adjust path if needed)
 
 const API_BASE = "http://localhost:8080";
 
-/* ========================= DASHBOARD ========================= */
+/**
+ * Recommended backend endpoints:
+ *
+ * PROFILE:
+ * - GET  /api/profile?loginEmail=a@b.com
+ * - POST /api/profile
+ *   body: { profile: {...}, organization: {...} | null }
+ *
+ * PRODUCTS / ISO:
+ * - GET  /api/products
+ *   -> returns: [{ id:"ISO9001", title:"ISO 9001", desc:"...", active:true }, ...]
+ *   (OR your entity style: { isoCode, isoName, description, active })
+ *
+ * - GET  /api/iso-standards (optional fallback)
+ *
+ * USER SELECTED PRODUCTS (optional):
+ * - GET  /api/user/products?loginEmail=a@b.com
+ *   -> returns: ["ISO9001","ISO27001"] OR { products: ["ISO9001"] }
+ *
+ * - POST /api/user/products
+ *   body: { loginEmail: "a@b.com", products: ["ISO9001","ISO27001"] }
+ *
+ * AUDIT:
+ * - POST /api/audit-details
+ *   body: { ...form }
+ *
+ * NOTIFICATIONS:
+ * - GET /api/audits/my?profileId=123
+ */
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -19,6 +49,13 @@ const UserDashboard = () => {
 
   // ✅ if profile already saved once, open products directly (optional)
   useEffect(() => {
+    const openTab = localStorage.getItem("openTab");
+    if (openTab) {
+      setActiveTab(openTab);
+      localStorage.removeItem("openTab");
+      return;
+    }
+
     const profileCompleted = localStorage.getItem("profileCompleted") === "true";
     if (profileCompleted) setActiveTab("products");
   }, []);
@@ -47,19 +84,15 @@ const UserDashboard = () => {
       case "audit":
         return (
           <AuditRequestSection
-            onAfterSubmit={() => {
-              // ✅ after submitting audit -> go to documents upload
-              setActiveTab("documents");
+            onSubmitted={() => {
+              setActiveTab("notifications");
             }}
           />
         );
 
-      case "documents":
-        return <DocumentUploadSection />;
-
       case "notifications":
         return (
-          <h3 className="coming-soon">🔔 Notifications Section (Coming Soon)</h3>
+          <UserNotifications />
         );
 
       default:
@@ -198,34 +231,22 @@ const ProfileSection = ({ onProfileSaved }) => {
       const res = await fetch(
         `${API_BASE}/api/profile?loginEmail=${encodeURIComponent(loginEmail)}`
       );
-
       if (!res.ok) return;
 
       const data = await res.json();
 
-      const profileToStore = data.profile ? data.profile : data;
-      const orgToStore = data.organization ? data.organization : {};
+      // ✅ supports both: {profile:{...},organization:{...}} OR direct profile object
+      const p = data.profile ? data.profile : data;
+      const o = data.organization ? data.organization : {};
 
-      if (data.profile) {
-        setProfile((p) => ({
-          ...p,
-          ...data.profile,
-          loginEmail: loginEmail,
-        }));
-      } else {
-        setProfile((p) => ({
-          ...p,
-          ...data,
-          loginEmail: loginEmail,
-        }));
-      }
+      setProfile((prev) => ({ ...prev, ...p, loginEmail }));
+      setOrganization((prev) => ({ ...prev, ...o }));
 
-      if (data.organization) {
-        setOrganization((o) => ({ ...o, ...data.organization }));
-      }
+      // ✅ store profileId for notifications page
+      if (p?.profileId) localStorage.setItem("profileId", String(p.profileId));
 
-      localStorage.setItem("profileData", JSON.stringify(profileToStore));
-      localStorage.setItem("orgData", JSON.stringify(orgToStore));
+      localStorage.setItem("profileData", JSON.stringify(p));
+      localStorage.setItem("orgData", JSON.stringify(o));
     } catch (err) {
       console.error("Fetch profile error:", err);
     } finally {
@@ -277,6 +298,7 @@ const ProfileSection = ({ onProfileSaved }) => {
       setIsEditing(false);
       setBackup(null);
 
+      // ✅ Store latest for audit auto-fill
       localStorage.setItem("profileData", JSON.stringify(profile));
       localStorage.setItem("orgData", JSON.stringify(organization));
 
@@ -322,7 +344,11 @@ const ProfileSection = ({ onProfileSaved }) => {
 
         <div className="profile-actions">
           {!isEditing ? (
-            <button type="button" className="edit-profile-btn" onClick={startEdit}>
+            <button
+              type="button"
+              className="edit-profile-btn"
+              onClick={startEdit}
+            >
               ✏️ Edit Profile
             </button>
           ) : (
@@ -577,13 +603,18 @@ const ProfileSection = ({ onProfileSaved }) => {
   );
 };
 
-/* ================= PRODUCTS SECTION (DYNAMIC FROM DB) ================= */
+/* ================= PRODUCTS SECTION (WITH SEARCH) ================= */
 
 const ProductsSection = ({ onAfterSave }) => {
   const loginEmail = localStorage.getItem("username") || "";
 
-  const [isoProducts, setIsoProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const isoProducts = [
+    { id: "ISO9001", title: "ISO 9001", desc: "Quality Management System (QMS)" },
+    { id: "ISO14001", title: "ISO 14001", desc: "Environmental Management System (EMS)" },
+    { id: "ISO45001", title: "ISO 45001", desc: "Occupational Health & Safety (OH&S)" },
+    { id: "ISO27001", title: "ISO 27001", desc: "Information Security (ISMS)" },
+    { id: "ISO22000", title: "ISO 22000", desc: "Food Safety (FSMS)" },
+  ];
 
   const [selected, setSelected] = useState(() => {
     const saved = localStorage.getItem("selectedIsoProducts");
@@ -592,28 +623,11 @@ const ProductsSection = ({ onAfterSave }) => {
 
   const [query, setQuery] = useState("");
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/iso-standards`);
-        if (!res.ok) throw new Error("Failed to load ISO standards");
-        const data = await res.json();
-        setIsoProducts(Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.error(e);
-        setIsoProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return isoProducts;
     return isoProducts.filter((p) =>
-      `${p.isoCode} ${p.isoName}`.toLowerCase().includes(q)
+      `${p.id} ${p.title} ${p.desc}`.toLowerCase().includes(q)
     );
   }, [query, isoProducts]);
 
@@ -627,19 +641,26 @@ const ProductsSection = ({ onAfterSave }) => {
 
   const saveToBackend = async () => {
     try {
-      await fetch(`${API_BASE}/api/products`, {
+      await fetch("http://localhost:8080/api/user/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginEmail, products: selected }),
       });
     } catch (e) {
-      // optional
+      // ignore if endpoint doesn't exist yet
     }
   };
 
   const handleSave = async () => {
-    localStorage.setItem("selectedIsoProducts", JSON.stringify(selected));
-    await saveToBackend();
+    const products = selected;
+    localStorage.setItem("selectedIsoProducts", JSON.stringify(products));
+
+    try {
+      await saveToBackend(products);
+    } catch (e) {
+      // ignore if endpoint doesn't exist
+    }
+
     alert("Products saved ✅");
     if (typeof onAfterSave === "function") onAfterSave();
   };
@@ -649,7 +670,15 @@ const ProductsSection = ({ onAfterSave }) => {
       <div className="products-header">
         <div>
           <h2 className="page-title">ISO Products</h2>
-          <div className="page-hint">Search and select ISO standards.</div>
+          <div className="page-hint">
+            Search and select ISO standards.
+            {productsLoading ? " (Loading...)" : ""}
+          </div>
+          {productsError ? (
+            <div className="page-hint" style={{ opacity: 0.9 }}>
+              {productsError}
+            </div>
+          ) : null}
         </div>
 
         <div className="product-search">
@@ -689,6 +718,9 @@ const ProductsSection = ({ onAfterSave }) => {
                 onClick={() => toggle(p.isoCode)}
                 role="button"
                 tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") toggle(p.id);
+                }}
               >
                 <div className="product-top">
                   <h3 className="product-title">{p.isoCode}</h3>
@@ -697,7 +729,7 @@ const ProductsSection = ({ onAfterSave }) => {
                   </span>
                 </div>
 
-                <p className="muted">{p.isoName}</p>
+                <p className="muted">{p.desc}</p>
 
                 <div className="check-row" onClick={(e) => e.stopPropagation()}>
                   <input
@@ -726,13 +758,21 @@ const ProductsSection = ({ onAfterSave }) => {
   );
 };
 
-/* ================= AUDIT REQUEST FORM (ISO LIST DYNAMIC FROM DB) ================= */
+/* ================= AUDIT REQUEST FORM (AUTO-FILL + ISO STANDARDS SECTION) ================= */
 
-const AuditRequestSection = ({ onAfterSubmit }) => {
+const AuditRequestSection = () => {
   const loginEmail = localStorage.getItem("username") || "";
 
-  const [isoStandardOptions, setIsoStandardOptions] = useState([]);
-  const [loadingIso, setLoadingIso] = useState(true);
+  const isoStandardOptions = useMemo(
+    () => [
+      { id: "ISO9001", label: "ISO 9001 (QMS)" },
+      { id: "ISO14001", label: "ISO 14001 (EMS)" },
+      { id: "ISO45001", label: "ISO 45001 (OH&S)" },
+      { id: "ISO27001", label: "ISO 27001 (ISMS)" },
+      { id: "ISO22000", label: "ISO 22000 (FSMS)" },
+    ],
+    []
+  );
 
   const selectedFromProducts =
     JSON.parse(localStorage.getItem("selectedIsoProducts") || "[]") || [];
@@ -795,11 +835,9 @@ const AuditRequestSection = ({ onAfterSubmit }) => {
 
   const toggleIsoStandard = (isoCode) => {
     setForm((f) => {
-      const exists = (f.isoStandards || []).includes(isoCode);
-      const next = exists
-        ? f.isoStandards.filter((x) => x !== isoCode)
-        : [...(f.isoStandards || []), isoCode];
-
+      const exists = (f.isoStandards || []).includes(id);
+      const next = exists ? f.isoStandards.filter((x) => x !== id) : [...(f.isoStandards || []), id];
+      // also keep products page synced (optional)
       localStorage.setItem("selectedIsoProducts", JSON.stringify(next));
       return { ...f, isoStandards: next };
     });
@@ -854,9 +892,7 @@ const AuditRequestSection = ({ onAfterSubmit }) => {
 
       alert(msg || "Audit request submitted ✅");
 
-      // ✅ go to documents tab after submit
-      if (typeof onAfterSubmit === "function") onAfterSubmit();
-
+      // keep auto-filled info, clear audit-specific fields
       setForm((f) => ({
         ...f,
         auditType: "Internal Audit",
@@ -866,6 +902,9 @@ const AuditRequestSection = ({ onAfterSubmit }) => {
         scope: "",
         notes: "",
       }));
+
+      // ✅ go to notifications tab
+      if (typeof onSubmitted === "function") onSubmitted();
     } catch (err) {
       console.error(err);
       alert("Server not reachable. Check Spring Boot is running on port 8080.");
@@ -879,9 +918,7 @@ const AuditRequestSection = ({ onAfterSubmit }) => {
           <h2 className="page-title">Audit Request Form</h2>
           <div className="page-hint">
             Auto-filled from Profile. Selected ISO:{" "}
-            <b>
-              {form.isoStandards?.length ? form.isoStandards.join(", ") : "None"}
-            </b>
+            <b>{form.isoStandards?.length ? form.isoStandards.join(", ") : "None"}</b>
           </div>
         </div>
       </div>
@@ -952,7 +989,11 @@ const AuditRequestSection = ({ onAfterSubmit }) => {
                   </Row>
 
                   <Row label="State">
-                    <input name="state" value={form.state} onChange={onChange} />
+                    <input
+                      name="state"
+                      value={form.state}
+                      onChange={onChange}
+                    />
                   </Row>
 
                   <Row label="Country">
@@ -978,55 +1019,38 @@ const AuditRequestSection = ({ onAfterSubmit }) => {
           {/* ===== ISO Standards Selection (DYNAMIC) ===== */}
           <section className="panel" style={{ marginBottom: 14 }}>
             <div className="panel-body">
-              <h3 style={{ margin: 0, marginBottom: 10 }}>
-                ISO Standard Selection
-              </h3>
-
-              {loadingIso ? (
-                <div className="no-results">Loading ISO standards...</div>
-              ) : (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: 10,
-                  }}
-                >
-                  {isoStandardOptions.map((opt) => {
-                    const checked = (form.isoStandards || []).includes(
-                      opt.isoCode
-                    );
-                    return (
-                      <label
-                        key={opt.isoId ?? opt.isoCode}
-                        style={{
-                          display: "flex",
-                          gap: 10,
-                          alignItems: "center",
-                          padding: "10px 12px",
-                          borderRadius: 14,
-                          border: "1px solid rgba(255,255,255,0.14)",
-                          background: checked
-                            ? "rgba(255,255,255,0.08)"
-                            : "rgba(255,255,255,0.05)",
-                          cursor: "pointer",
-                          userSelect: "none",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleIsoStandard(opt.isoCode)}
-                        />
-                        <span style={{ fontWeight: 800 }}>
-                          {opt.isoCode} ({opt.isoName})
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
+              <h3 style={{ margin: 0, marginBottom: 10 }}>ISO Standard Selection</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+                {isoStandardOptions.map((opt) => {
+                  const checked = (form.isoStandards || []).includes(opt.id);
+                  return (
+                    <label
+                      key={opt.id}
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        alignItems: "center",
+                        padding: "10px 12px",
+                        borderRadius: 14,
+                        border: "1px solid rgba(255,255,255,0.14)",
+                        background: checked ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.05)",
+                        cursor: "pointer",
+                        userSelect: "none",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleIsoStandard(opt.id)}
+                      />
+                      <span style={{ fontWeight: 800 }}>{opt.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <div style={{ marginTop: 10, color: "rgba(234,240,255,0.72)", fontSize: 12 }}>
+                Tip: You can change ISO selections here (it will also sync with Products selection).
+              </div>
             </div>
           </section>
 

@@ -50,11 +50,7 @@ const UserDashboard = () => {
         return <DocumentUploadSection />;
 
       case "notifications":
-        return (
-          <h3 className="coming-soon">
-            🔔 Notifications Section (Coming Soon)
-          </h3>
-        );
+        return <NotificationsSection />;
 
       default:
         return null;
@@ -123,6 +119,149 @@ const UserDashboard = () => {
       </div>
 
       <main className="content">{renderContent()}</main>
+    </div>
+  );
+};
+
+/* ================= NOTIFICATIONS SECTION ================= */
+
+const NotificationsSection = () => {
+  const loginEmail = localStorage.getItem("username") || "";
+
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+
+      if (!loginEmail) {
+        setItems([]);
+        return;
+      }
+
+      // ✅ CHANGE THIS ENDPOINT if your backend is different
+      // Recommended backend: GET /api/audit-details/user?loginEmail=...
+      const res = await fetch(
+        `${API_BASE}/api/audit-details/user?loginEmail=${encodeURIComponent(loginEmail)}`
+      );
+
+      if (!res.ok) {
+        setItems([]);
+        return;
+      }
+
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Notifications fetch error:", e);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="products-wrap">
+      <div className="products-header">
+        <div>
+          <h2 className="page-title">Notifications</h2>
+          <div className="page-hint">Track your audit request status.</div>
+        </div>
+
+        <button className="update-profile-btn" type="button" onClick={fetchNotifications}>
+          Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="no-results">Loading notifications...</div>
+      ) : items.length === 0 ? (
+        <div className="no-results">No audit requests found.</div>
+      ) : (
+        <div style={{ display: "grid", gap: 12 }}>
+          {items.map((n) => (
+            <div
+              key={n.auditId || n.id}
+              style={{
+                border: "1px solid rgba(255,255,255,.12)",
+                borderRadius: 14,
+                padding: 14,
+                background: "rgba(255,255,255,.06)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ fontWeight: 900 }}>
+                  {n.auditType || "Audit Request"}{" "}
+                  {n.preferredDate ? (
+                    <span style={{ opacity: 0.8, fontWeight: 600 }}>
+                      • {n.preferredDate}
+                    </span>
+                  ) : null}
+                </div>
+
+                <span
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(255,255,255,.18)",
+                    background:
+                      (n.status || "").toLowerCase() === "approved"
+                        ? "rgba(34,197,94,.18)"
+                        : (n.status || "").toLowerCase() === "rejected"
+                        ? "rgba(239,68,68,.18)"
+                        : "rgba(234,179,8,.18)",
+                    fontWeight: 800,
+                    fontSize: 12,
+                  }}
+                >
+                  {n.status || "Pending"}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 13,
+                  opacity: 0.9,
+                  display: "grid",
+                  gap: 4,
+                }}
+              >
+                <div>
+                  <b>Location:</b> {n.auditLocation || "-"}
+                </div>
+                <div>
+                  <b>Duration:</b> {n.duration || "-"}
+                </div>
+                <div>
+                  <b>ISO:</b>{" "}
+                  {Array.isArray(n.isoStandards)
+                    ? n.isoStandards.join(", ")
+                    : n.isoStandards || "-"}
+                </div>
+                {n.adminComment ? (
+                  <div>
+                    <b>Admin Comment:</b> {n.adminComment}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -197,7 +336,6 @@ const ProfileSection = ({ onProfileSaved }) => {
       setProfile((prev) => ({ ...prev, ...p, loginEmail }));
       setOrganization((prev) => ({ ...prev, ...o }));
 
-      // ✅ Store for audit auto-fill
       localStorage.setItem("profileData", JSON.stringify({ ...p, loginEmail }));
       localStorage.setItem("orgData", JSON.stringify(o));
     } catch (err) {
@@ -384,15 +522,30 @@ const ProfileSection = ({ onProfileSaved }) => {
 
               <div className="col">
                 <Row label="Phone">
-                  <input name="phone" value={profile.phone} onChange={onProfileChange} disabled={disabled} />
+                  <input
+                    name="phone"
+                    value={profile.phone}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  />
                 </Row>
 
                 <Row label="Mobile">
-                  <input name="mobile" value={profile.mobile} onChange={onProfileChange} disabled={disabled} />
+                  <input
+                    name="mobile"
+                    value={profile.mobile}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  />
                 </Row>
 
                 <Row label="Fax">
-                  <input name="fax" value={profile.fax} onChange={onProfileChange} disabled={disabled} />
+                  <input
+                    name="fax"
+                    value={profile.fax}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  />
                 </Row>
 
                 <Row label="Organization size">
@@ -425,7 +578,12 @@ const ProfileSection = ({ onProfileSaved }) => {
                 </Row>
 
                 <Row label="Job title">
-                  <input name="jobTitle" value={profile.jobTitle} onChange={onProfileChange} disabled={disabled} />
+                  <input
+                    name="jobTitle"
+                    value={profile.jobTitle}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  />
                 </Row>
               </div>
             </div>
@@ -448,7 +606,12 @@ const ProfileSection = ({ onProfileSaved }) => {
               <div className="two-col">
                 <div className="col">
                   <Row label="Company">
-                    <input name="company" value={organization.company} onChange={onOrgChange} disabled={disabled} />
+                    <input
+                      name="company"
+                      value={organization.company}
+                      onChange={onOrgChange}
+                      disabled={disabled}
+                    />
                   </Row>
 
                   <Row label="Address">
@@ -473,7 +636,12 @@ const ProfileSection = ({ onProfileSaved }) => {
 
                 <div className="col">
                   <Row label="City">
-                    <input name="city" value={organization.city} onChange={onOrgChange} disabled={disabled} />
+                    <input
+                      name="city"
+                      value={organization.city}
+                      onChange={onOrgChange}
+                      disabled={disabled}
+                    />
                   </Row>
 
                   <Row label="Country">
@@ -490,7 +658,12 @@ const ProfileSection = ({ onProfileSaved }) => {
                   </Row>
 
                   <Row label="State">
-                    <input name="state" value={organization.state} onChange={onOrgChange} disabled={disabled} />
+                    <input
+                      name="state"
+                      value={organization.state}
+                      onChange={onOrgChange}
+                      disabled={disabled}
+                    />
                   </Row>
                 </div>
               </div>
@@ -551,16 +724,13 @@ const ProductsSection = ({ onAfterSave }) => {
   const handleSave = async () => {
     localStorage.setItem("selectedIsoProducts", JSON.stringify(selected));
 
-    // optional backend save
     try {
       await fetch(`${API_BASE}/api/user/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginEmail, products: selected }),
       });
-    } catch (e) {
-      // ignore if endpoint doesn't exist
-    }
+    } catch (e) {}
 
     alert("Products saved ✅");
     if (typeof onAfterSave === "function") onAfterSave();
@@ -663,14 +833,15 @@ const AuditRequestSection = ({ onSubmitted }) => {
         if (!res.ok) return;
         const data = await res.json();
         const normalized = Array.isArray(data)
-          ? data.map((x) => ({
-              id: x.id || x.isoCode || x.code,
-              label: x.label || x.isoName || x.title || x.id || x.isoCode,
-            })).filter(x => x.id)
+          ? data
+              .map((x) => ({
+                id: x.id || x.isoCode || x.code,
+                label: x.label || x.isoName || x.title || x.id || x.isoCode,
+              }))
+              .filter((x) => x.id)
           : [];
         if (normalized.length) setIsoStandardOptions(normalized);
       } catch (e) {
-        // keep fallback
       } finally {
         setIsoLoading(false);
       }
@@ -698,9 +869,7 @@ const AuditRequestSection = ({ onSubmitted }) => {
     city: storedOrg.city || "",
     state: storedOrg.state || "",
     country:
-      storedOrg.country && storedOrg.country !== "Select"
-        ? storedOrg.country
-        : "India",
+      storedOrg.country && storedOrg.country !== "Select" ? storedOrg.country : "India",
     postalCode: storedOrg.postalCode || "",
     isoStandards: selectedFromProducts,
     auditType: "Internal Audit",
@@ -761,7 +930,8 @@ const AuditRequestSection = ({ onSubmitted }) => {
         <div>
           <h2 className="page-title">Audit Request Form</h2>
           <div className="page-hint">
-            Selected ISO: <b>{form.isoStandards?.length ? form.isoStandards.join(", ") : "None"}</b>
+            Selected ISO:{" "}
+            <b>{form.isoStandards?.length ? form.isoStandards.join(", ") : "None"}</b>
             {isoLoading ? " (Loading ISO list...)" : ""}
           </div>
         </div>
@@ -769,12 +939,17 @@ const AuditRequestSection = ({ onSubmitted }) => {
 
       <form className="panel audit-form" onSubmit={submitAuditRequest}>
         <div className="panel-body">
-          {/* ISO Standards */}
           <section className="panel" style={{ marginBottom: 14 }}>
             <div className="panel-body">
               <h3 style={{ margin: 0, marginBottom: 10 }}>ISO Standard Selection</h3>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: 10,
+                }}
+              >
                 {isoStandardOptions.map((opt) => {
                   const checked = (form.isoStandards || []).includes(opt.id);
                   return (
@@ -787,12 +962,18 @@ const AuditRequestSection = ({ onSubmitted }) => {
                         padding: "10px 12px",
                         borderRadius: 14,
                         border: "1px solid rgba(255,255,255,0.14)",
-                        background: checked ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.05)",
+                        background: checked
+                          ? "rgba(255,255,255,0.08)"
+                          : "rgba(255,255,255,0.05)",
                         cursor: "pointer",
                         userSelect: "none",
                       }}
                     >
-                      <input type="checkbox" checked={checked} onChange={() => toggleIsoStandard(opt.id)} />
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleIsoStandard(opt.id)}
+                      />
                       <span style={{ fontWeight: 800 }}>{opt.label}</span>
                     </label>
                   );
@@ -801,7 +982,6 @@ const AuditRequestSection = ({ onSubmitted }) => {
             </div>
           </section>
 
-          {/* Audit Details */}
           <section className="panel" style={{ marginBottom: 14 }}>
             <div className="panel-body">
               <h3 style={{ margin: 0, marginBottom: 10 }}>Audit Details</h3>
@@ -809,7 +989,13 @@ const AuditRequestSection = ({ onSubmitted }) => {
               <div className="two-col">
                 <div className="col">
                   <Row label="Preferred Date" required>
-                    <input type="date" name="preferredDate" value={form.preferredDate} onChange={onChange} required />
+                    <input
+                      type="date"
+                      name="preferredDate"
+                      value={form.preferredDate}
+                      onChange={onChange}
+                      required
+                    />
                   </Row>
 
                   <Row label="Audit Type" required>
@@ -873,7 +1059,10 @@ const DocumentUploadSection = () => {
   const selectedIso = JSON.parse(localStorage.getItem("selectedIsoProducts") || "[]") || [];
   const storageKey = `uploadedDocs:${loginEmail}`;
 
-  const allowedExt = useMemo(() => ["pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png"], []);
+  const allowedExt = useMemo(
+    () => ["pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png"],
+    []
+  );
   const maxBytes = 10 * 1024 * 1024;
 
   const docTemplates = useMemo(() => {
@@ -928,7 +1117,9 @@ const DocumentUploadSection = () => {
   };
 
   const requiredCount = docTemplates.filter((d) => d.required).length;
-  const requiredUploadedCount = docTemplates.filter((d) => d.required).filter((d) => uploaded?.[d.docType]).length;
+  const requiredUploadedCount = docTemplates
+    .filter((d) => d.required)
+    .filter((d) => uploaded?.[d.docType]).length;
 
   return (
     <div className="products-wrap">
@@ -968,18 +1159,29 @@ const DocumentUploadSection = () => {
                       background: "rgba(255,255,255,0.05)",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <div>
                         <div style={{ fontWeight: 900 }}>
                           {t.docType} {t.required && <span className="req">*</span>}
                         </div>
                         <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>
-                          For: <b>{t.isoCode === "ALL" ? "All Standards" : t.isoCode}</b> • Allowed: {allowedExt.join(", ")} • Max 10MB
+                          For: <b>{t.isoCode === "ALL" ? "All Standards" : t.isoCode}</b> • Allowed:{" "}
+                          {allowedExt.join(", ")} • Max 10MB
                         </div>
                       </div>
 
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        <span className={`chip ${status === "Uploaded" ? "chip-on" : ""}`}>{status}</span>
+                        <span className={`chip ${status === "Uploaded" ? "chip-on" : ""}`}>
+                          {status}
+                        </span>
 
                         <label
                           style={{
@@ -1010,8 +1212,12 @@ const DocumentUploadSection = () => {
 
                     {meta && (
                       <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85 }}>
-                        <div>File: <b>{meta.fileName}</b></div>
-                        <div>Uploaded: <b>{new Date(meta.uploadedAt).toLocaleString()}</b></div>
+                        <div>
+                          File: <b>{meta.fileName}</b>
+                        </div>
+                        <div>
+                          Uploaded: <b>{new Date(meta.uploadedAt).toLocaleString()}</b>
+                        </div>
                       </div>
                     )}
                   </div>

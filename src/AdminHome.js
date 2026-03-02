@@ -27,7 +27,7 @@ export default function AdminHome() {
         init[a.auditId] = {
           assignedAuditor: a.assignedAuditor || "",
           adminComment: a.adminComment || "",
-          status: a.status || "Pending",
+          status: a.status || "pending",
         };
       });
       setEdits(init);
@@ -72,7 +72,7 @@ export default function AdminHome() {
           body: JSON.stringify({
             assignedAuditor: payload.assignedAuditor,
             adminComment: payload.adminComment,
-            status: payload.status || "Pending", // keep pending or change to Approved/Rejected
+            status: payload.status || "pending", 
           }),
         }
       );
@@ -126,7 +126,7 @@ export default function AdminHome() {
               const row = edits[audit.auditId] || {
                 assignedAuditor: "",
                 adminComment: "",
-                status: "Pending",
+                status: "pending",
               };
 
               return (
@@ -157,7 +157,7 @@ export default function AdminHome() {
                       }
                       style={{ marginTop: 6 }}
                     >
-                      <option value="Pending">Pending</option>
+                      <option value="pending">Pending</option>
                       <option value="Approved">Approved</option>
                       <option value="Rejected">Rejected</option>
                     </select>

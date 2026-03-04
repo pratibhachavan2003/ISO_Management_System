@@ -16,6 +16,11 @@ const UserDashboard = () => {
 
   const [activeTab, setActiveTab] = useState("profile");
 
+  // ✅ FIX: keep auditId in state (and persist in localStorage)
+  const [currentAuditId, setCurrentAuditId] = useState(() => {
+    return Number(localStorage.getItem("currentAuditId") || 0);
+  });
+
   useEffect(() => {
     const openTab = localStorage.getItem("openTab");
     if (openTab) {
@@ -44,10 +49,32 @@ const UserDashboard = () => {
         return <ProductsSection onAfterSave={() => setActiveTab("audit")} />;
 
       case "audit":
-        return <AuditRequestSection onSubmitted={() => setActiveTab("notifications")} />;
+        return (
+          <AuditRequestSection
+            onSubmitted={(auditId) => {
+              if (auditId) {
+                localStorage.setItem("currentAuditId", String(auditId));
+                setCurrentAuditId(Number(auditId));
+                setActiveTab("documents"); // ✅ go to documents after submit
+              } else {
+                setActiveTab("notifications");
+              }
+            }}
+          />
+        );
 
-      case "documents":
-        return <DocumentUploadSection />;
+      case "documents": {
+        // ✅ Always read again (extra safety)
+        const auditIdLS = Number(localStorage.getItem("currentAuditId") || 0);
+        const effective = currentAuditId || auditIdLS;
+
+        return (
+          <DocumentUploadSection
+            auditId={effective}
+            onContinue={() => setActiveTab("notifications")}
+          />
+        );
+      }
 
       case "notifications":
         return <NotificationsSection />;
@@ -100,9 +127,20 @@ const UserDashboard = () => {
             Audit Request
           </button>
 
+          {/* ✅ UPDATED: block documents if auditId missing */}
           <button
             className={`tab ${activeTab === "documents" ? "active" : ""}`}
-            onClick={() => setActiveTab("documents")}
+            onClick={() => {
+              const auditIdLS = Number(localStorage.getItem("currentAuditId") || 0);
+              const effective = currentAuditId || auditIdLS;
+
+              if (!effective) {
+                alert("Please submit Audit Request first to get Audit ID.");
+                setActiveTab("audit");
+                return;
+              }
+              setActiveTab("documents");
+            }}
             type="button"
           >
             Documents
@@ -140,7 +178,6 @@ const NotificationsSection = () => {
         return;
       }
 
-      // ✅ CHANGE THIS ENDPOINT if your backend is different
       // Recommended backend: GET /api/audit-details/user?loginEmail=...
       const res = await fetch(
         `${API_BASE}/api/audit-details/user?loginEmail=${encodeURIComponent(loginEmail)}`
@@ -227,7 +264,7 @@ const NotificationsSection = () => {
                     fontSize: 12,
                   }}
                 >
-                  {n.status || "Pending"}
+                  {n.status || "pending"}
                 </span>
               </div>
 
@@ -909,15 +946,26 @@ const AuditRequestSection = ({ onSubmitted }) => {
         body: JSON.stringify(form),
       });
 
-      const msg = await res.text();
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : { message: await res.text() };
+
       if (!res.ok) {
-        alert(msg || "Audit request failed");
+        alert(data?.message || "Audit request failed");
         return;
       }
 
-      alert(msg || "Audit request submitted ✅");
+      // ✅ IMPORTANT: auditId for documents
+      const auditId = data?.auditId || data?.id || data?.audit_id;
 
-      if (typeof onSubmitted === "function") onSubmitted();
+      if (auditId) {
+        localStorage.setItem("currentAuditId", String(auditId));
+      }
+
+      alert(data?.message || "Audit request submitted ✅");
+
+      if (typeof onSubmitted === "function") onSubmitted(auditId);
     } catch (err) {
       console.error(err);
       alert("Server not reachable. Check Spring Boot is running on port 8080.");
@@ -1053,8 +1101,12 @@ const AuditRequestSection = ({ onSubmitted }) => {
 
 /* ================= DOCUMENT UPLOAD SECTION ================= */
 
-const DocumentUploadSection = () => {
+const DocumentUploadSection = ({ auditId, profileId, onContinue }) => {
   const loginEmail = localStorage.getItem("username") || "";
+
+  // ✅ extra safety fallback (strong number-safe)
+  const effectiveAuditId =
+    Number(auditId || 0) || Number(localStorage.getItem("currentAuditId") || 0);
 
   const selectedIso = JSON.parse(localStorage.getItem("selectedIsoProducts") || "[]") || [];
   const storageKey = `uploadedDocs:${loginEmail}`;
@@ -1090,6 +1142,10 @@ const DocumentUploadSection = () => {
     }
   });
 
+  const [selectedFiles, setSelectedFiles] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(uploaded));
   }, [uploaded, storageKey]);
@@ -1102,12 +1158,17 @@ const DocumentUploadSection = () => {
     return null;
   };
 
-  const onPickFile = async (template, file) => {
+  const onPickFile = (template, file) => {
     const err = validateFile(file);
     if (err) {
       alert(err);
       return;
     }
+
+    setSelectedFiles((prev) => ({
+      ...prev,
+      [template.docType]: file,
+    }));
 
     const now = new Date().toISOString();
     setUploaded((prev) => ({
@@ -1121,6 +1182,70 @@ const DocumentUploadSection = () => {
     .filter((d) => d.required)
     .filter((d) => uploaded?.[d.docType]).length;
 
+  const canContinue =
+    selectedIso.length > 0 &&
+    docTemplates.filter((d) => d.required).every((d) => uploaded?.[d.docType]);
+
+  const saveAndContinue = async () => {
+  try {
+    if (!effectiveAuditId) {
+      setMsg("❌ auditId missing. Please submit audit request first.");
+      return;
+    }
+
+    if (!canContinue) {
+      setMsg("❌ Please upload all required documents first.");
+      return;
+    }
+
+    setSaving(true);
+    setMsg("");
+
+    const fd = new FormData();
+
+    // 🔥 BUILD FROM selectedFiles DIRECTLY (SAFE VERSION)
+    let fileCount = 0;
+
+    for (const docType in selectedFiles) {
+      const file = selectedFiles[docType];
+      if (file) {
+        fd.append("docTypes", docType);
+        fd.append("files", file);
+        fileCount++;
+      }
+    }
+
+    if (fileCount === 0) {
+      // No new files, just continue
+      if (onContinue) onContinue();
+      return;
+    }
+
+    fd.append("auditId", String(effectiveAuditId));
+
+    const res = await fetch(`${API_BASE}/api/audit-documents/upload-multi`, {
+      method: "POST",
+      body: fd,
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      throw new Error(text || "Upload failed");
+    }
+
+    setMsg("✅ Saved successfully.");
+    setSelectedFiles({});
+
+    if (onContinue) onContinue();
+
+  } catch (e) {
+    console.error("Upload error:", e);
+    setMsg("❌ " + (e.message || "Upload error"));
+  } finally {
+    setSaving(false);
+  }
+};
   return (
     <div className="products-wrap">
       <div className="products-header">
@@ -1131,9 +1256,31 @@ const DocumentUploadSection = () => {
             <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
               Required uploaded: <b>{requiredUploadedCount}/{requiredCount}</b>
             </div>
+            <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
+              Current Audit ID: <b>{effectiveAuditId || "—"}</b>
+            </div>
           </div>
         </div>
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button
+            onClick={saveAndContinue}
+            disabled={saving || !canContinue}
+            type="button"
+            style={{
+              padding: "10px 14px",
+              borderRadius: 12,
+              fontWeight: 900,
+              cursor: saving || !canContinue ? "not-allowed" : "pointer",
+              opacity: saving || !canContinue ? 0.6 : 1,
+            }}
+          >
+            {saving ? "Saving..." : "Save & Continue"}
+          </button>
+        </div>
       </div>
+
+      {msg && <div style={{ marginTop: 10, fontSize: 13 }}>{msg}</div>}
 
       {selectedIso.length === 0 ? (
         <div className="no-results">

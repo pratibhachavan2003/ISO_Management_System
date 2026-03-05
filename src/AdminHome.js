@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
 
 export default function AdminHome() {
+  const navigate = useNavigate();
+
   const [pendingAudits, setPendingAudits] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,6 +57,11 @@ export default function AdminHome() {
     }));
   };
 
+  const openDocuments = (auditId) => {
+  localStorage.setItem("adminAuditId", String(auditId));
+  navigate("/admin/documents"); // ✅ matches App.js route
+};
+
   const saveReview = async (auditId) => {
     const payload = edits[auditId] || {};
     if (!payload.assignedAuditor?.trim()) {
@@ -72,7 +80,7 @@ export default function AdminHome() {
           body: JSON.stringify({
             assignedAuditor: payload.assignedAuditor,
             adminComment: payload.adminComment,
-            status: payload.status || "pending", 
+            status: payload.status || "pending",
           }),
         }
       );
@@ -84,8 +92,6 @@ export default function AdminHome() {
       }
 
       alert(msg || "Saved ✅");
-
-      // refresh pending list (if status changed to Approved/Rejected, it will disappear from pending)
       await fetchPendingAudits();
     } catch (e) {
       console.error(e);
@@ -113,8 +119,6 @@ export default function AdminHome() {
               <th>Preferred Date</th>
               <th>Duration</th>
               <th>Location</th>
-
-              {/* ✅ new columns */}
               <th>Assign Auditor</th>
               <th>Admin Comment</th>
               <th>Action</th>
@@ -138,7 +142,6 @@ export default function AdminHome() {
                   <td>{audit.duration}</td>
                   <td>{audit.auditLocation}</td>
 
-                  {/* ✅ Assign Auditor */}
                   <td style={{ minWidth: 180 }}>
                     <input
                       className="admin-input"
@@ -148,7 +151,7 @@ export default function AdminHome() {
                       }
                       placeholder="Auditor name/email"
                     />
-                    {/* optional status select */}
+
                     <select
                       className="admin-select"
                       value={row.status}
@@ -163,7 +166,6 @@ export default function AdminHome() {
                     </select>
                   </td>
 
-                  {/* ✅ Admin Comment */}
                   <td style={{ minWidth: 260 }}>
                     <textarea
                       className="admin-textarea"
@@ -176,8 +178,16 @@ export default function AdminHome() {
                     />
                   </td>
 
-                  {/* ✅ Save */}
                   <td style={{ whiteSpace: "nowrap" }}>
+                    {/* ✅ Documents button BEFORE Save */}
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => openDocuments(audit.auditId)}
+                      style={{ marginRight: 8 }}
+                    >
+                      Documents
+                    </button>
+
                     <button
                       className="btn btn-primary"
                       onClick={() => saveReview(audit.auditId)}

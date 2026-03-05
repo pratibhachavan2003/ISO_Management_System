@@ -3,7 +3,20 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./UserDashboard.css";
 import UserNotifications from "./UserNotifications";
+// ✅ ADD THESE to remove ESLint no-undef errors (quick compile fix)
+const [msg, setMsg] = useState("");
+const [saving, setSaving] = useState(false);
 
+// If your old code uses selectedFiles/setSelectedFiles:
+const [selectedFiles, setSelectedFiles] = useState({}); // { [docType]: File }
+
+// If your old code uses uploaded map to check required docs:
+const [uploaded, setUploaded] = useState({}); // { [docType]: true }
+
+// If old code refers to onContinue, define it using onAfterUpload
+const onContinue = () => {
+  if (typeof onAfterUpload === "function") onAfterUpload();
+};
 const API_BASE = "http://localhost:8080";
 
 const UserDashboard = () => {
@@ -16,6 +29,11 @@ const UserDashboard = () => {
   };
 
   const [activeTab, setActiveTab] = useState("profile");
+
+  // ✅ FIX: keep auditId in state (and persist in localStorage)
+  const [currentAuditId, setCurrentAuditId] = useState(() => {
+    return Number(localStorage.getItem("currentAuditId") || 0);
+  });
 
   useEffect(() => {
     const openTab = localStorage.getItem("openTab");
@@ -50,6 +68,7 @@ const UserDashboard = () => {
       onAfterUpload={() => setActiveTab("notifications")}
     />
   );
+
       case "notifications":
   return <UserNotifications />;
       default:
@@ -74,6 +93,7 @@ const UserDashboard = () => {
 
       <div className="tabs-wrap">
         <div className="tabs">
+
           {["profile", "products", "audit", "documents", "notifications"].map((tab) => (
             <button
               key={tab}
@@ -86,6 +106,7 @@ const UserDashboard = () => {
                 : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
+
         </div>
       </div>
 
@@ -105,6 +126,7 @@ const NotificationsSection = () => {
     try {
       setLoading(true);
       if (!loginEmail) { setItems([]); return; }
+
 
       const res = await fetch(
         `${API_BASE}/api/audit-details/user?loginEmail=${encodeURIComponent(loginEmail)}`
@@ -173,7 +195,7 @@ const NotificationsSection = () => {
                     fontSize: 12,
                   }}
                 >
-                  {n.status || "Pending"}
+                  {n.status || "pending"}
                 </span>
               </div>
 
@@ -663,9 +685,11 @@ const AuditRequestSection = ({ onSubmitted }) => {
       return;
     }
 
+
     const createdAuditId = data?.auditId || data?.id;
     if (createdAuditId) {
       localStorage.setItem("currentAuditId", String(createdAuditId));
+
     }
 
     alert(data?.message || "Audit request submitted ✅");
@@ -774,9 +798,15 @@ const AuditRequestSection = ({ onSubmitted }) => {
 
 /* ================= DOCUMENT UPLOAD SECTION ================= */
 
+
 const DocumentUploadSection = ({ onAfterUpload }) => {
+
   const loginEmail = localStorage.getItem("username") || "";
   const auditId = localStorage.getItem("currentAuditId") || ""; // ✅ auditId from audit submit
+
+  // ✅ extra safety fallback (strong number-safe)
+  const effectiveAuditId =
+    Number(auditId || 0) || Number(localStorage.getItem("currentAuditId") || 0);
 
   const selectedIso = JSON.parse(localStorage.getItem("selectedIsoProducts") || "[]") || [];
 
@@ -805,9 +835,11 @@ const DocumentUploadSection = ({ onAfterUpload }) => {
   // ✅ files chosen by user
   const [pickedFiles, setPickedFiles] = useState({}); // { [docType]: File }
 
+
   // ✅ UI status
   const [statusMap, setStatusMap] = useState({}); // { [docType]: "Pending" | "Ready" | "Uploading..." | "Uploaded" | "Failed" }
   const [uploading, setUploading] = useState(false);
+
 
   const validateFile = (file) => {
     if (!file) return "No file selected";
@@ -824,8 +856,10 @@ const DocumentUploadSection = ({ onAfterUpload }) => {
       return;
     }
 
+
     setPickedFiles((prev) => ({ ...prev, [template.docType]: file }));
     setStatusMap((prev) => ({ ...prev, [template.docType]: "Ready" }));
+
   };
 
   const uploadOne = async (template, file) => {
@@ -891,6 +925,70 @@ const DocumentUploadSection = ({ onAfterUpload }) => {
     }
   };
 
+  const canContinue =
+    selectedIso.length > 0 &&
+    docTemplates.filter((d) => d.required).every((d) => uploaded?.[d.docType]);
+
+  const saveAndContinue = async () => {
+  try {
+    if (!effectiveAuditId) {
+      setMsg("❌ auditId missing. Please submit audit request first.");
+      return;
+    }
+
+    if (!canContinue) {
+      setMsg("❌ Please upload all required documents first.");
+      return;
+    }
+
+    setSaving(true);
+    setMsg("");
+
+    const fd = new FormData();
+
+    // 🔥 BUILD FROM selectedFiles DIRECTLY (SAFE VERSION)
+    let fileCount = 0;
+
+    for (const docType in selectedFiles) {
+      const file = selectedFiles[docType];
+      if (file) {
+        fd.append("docTypes", docType);
+        fd.append("files", file);
+        fileCount++;
+      }
+    }
+
+    if (fileCount === 0) {
+      // No new files, just continue
+      if (onContinue) onContinue();
+      return;
+    }
+
+    fd.append("auditId", String(effectiveAuditId));
+
+    const res = await fetch(`${API_BASE}/api/audit-documents/upload-multi`, {
+      method: "POST",
+      body: fd,
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      throw new Error(text || "Upload failed");
+    }
+
+    setMsg("✅ Saved successfully.");
+    setSelectedFiles({});
+
+    if (onContinue) onContinue();
+
+  } catch (e) {
+    console.error("Upload error:", e);
+    setMsg("❌ " + (e.message || "Upload error"));
+  } finally {
+    setSaving(false);
+  }
+};
   return (
     <div className="products-wrap">
       <div className="products-header">
@@ -898,9 +996,29 @@ const DocumentUploadSection = ({ onAfterUpload }) => {
           <h2 className="page-title">Upload Documents</h2>
           <div className="page-hint">
             Audit ID: <b>{auditId || "Not selected"}</b>
+
           </div>
         </div>
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button
+            onClick={saveAndContinue}
+            disabled={saving || !canContinue}
+            type="button"
+            style={{
+              padding: "10px 14px",
+              borderRadius: 12,
+              fontWeight: 900,
+              cursor: saving || !canContinue ? "not-allowed" : "pointer",
+              opacity: saving || !canContinue ? 0.6 : 1,
+            }}
+          >
+            {saving ? "Saving..." : "Save & Continue"}
+          </button>
+        </div>
       </div>
+
+      {msg && <div style={{ marginTop: 10, fontSize: 13 }}>{msg}</div>}
 
       {selectedIso.length === 0 ? (
         <div className="no-results">

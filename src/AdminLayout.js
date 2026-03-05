@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
 
+
 export default function AdminLayout() {
   const navigate = useNavigate();
 

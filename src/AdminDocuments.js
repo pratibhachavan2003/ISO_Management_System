@@ -1,8 +1,11 @@
+
 import React, { useEffect, useState } from "react";
+
 
 const API_BASE = "http://localhost:8080";
 
 export default function AdminDocuments() {
+
   const auditId = localStorage.getItem("adminAuditId") || "";
 
   const [loading, setLoading] = useState(true);
@@ -304,4 +307,5 @@ export default function AdminDocuments() {
       )}
     </div>
   );
+
 }

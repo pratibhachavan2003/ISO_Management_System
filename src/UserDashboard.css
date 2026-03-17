@@ -632,3 +632,255 @@ body {
 .audit-form {
   margin-top: 12px;
 }
+
+/* =========================
+   ADMIN DASHBOARD TABLE FIX
+========================= */
+
+.table-section {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 0 26px;
+}
+
+.table-section h3 {
+  margin: 0 0 14px;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.audit-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.audit-table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+}
+
+.audit-table thead th {
+  text-align: left;
+  padding: 16px 14px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.audit-table tbody td {
+  padding: 12px 14px;
+  vertical-align: middle;
+  color: var(--text);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.audit-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.audit-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* admin input */
+.audit-input {
+  width: 100%;
+  min-width: 155px;
+  height: 42px;
+  border-radius: 12px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  outline: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.audit-input::placeholder {
+  color: rgba(234, 240, 255, 0.55);
+}
+
+.audit-input:focus {
+  border-color: rgba(110, 231, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(110, 231, 255, 0.14);
+}
+
+/* admin textarea */
+.audit-textarea {
+  width: 100%;
+  min-width: 230px;
+  min-height: 74px;
+  border-radius: 14px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.audit-textarea::placeholder {
+  color: rgba(234, 240, 255, 0.55);
+}
+
+.audit-textarea:focus {
+  border-color: rgba(110, 231, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(110, 231, 255, 0.14);
+}
+
+/* status dropdown */
+.status-select {
+  width: 155px;
+  height: 42px;
+  border-radius: 12px;
+  padding: 0 38px 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  outline: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--text);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  transition: 0.15s ease;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));
+  background-image:
+    url("data:image/svg+xml;utf8,<svg fill='white' height='20' viewBox='0 0 20 20' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M5.5 7.5L10 12l4.5-4.5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+.status-select:focus {
+  border-color: rgba(110, 231, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(110, 231, 255, 0.14);
+}
+
+.status-select option {
+  background: #182235;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.status-pending {
+  background-color: rgba(234, 179, 8, 0.16) !important;
+  color: #fde68a !important;
+  border-color: rgba(250, 204, 21, 0.25) !important;
+}
+
+.status-approved {
+  background-color: rgba(34, 197, 94, 0.16) !important;
+  color: #86efac !important;
+  border-color: rgba(34, 197, 94, 0.28) !important;
+}
+
+.status-rejected {
+  background-color: rgba(239, 68, 68, 0.16) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.28) !important;
+}
+
+/* documents button/link */
+.documents-btn,
+.documents-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 900;
+  color: #dbeafe;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.26);
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.documents-btn:hover,
+.documents-link:hover {
+  background: rgba(59, 130, 246, 0.22);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* save button */
+.save-btn {
+  border: none;
+  background: var(--grad);
+  color: #07101f;
+  min-width: 78px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow2);
+}
+
+.save-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* utility cells */
+.documents-cell {
+  white-space: nowrap;
+}
+
+.action-cell {
+  white-space: nowrap;
+}
+
+.status-cell {
+  min-width: 170px;
+}
+
+.comment-cell {
+  min-width: 260px;
+}
+
+.auditor-cell {
+  min-width: 180px;
+}
+
+/* responsive admin table */
+@media (max-width: 900px) {
+  .audit-table {
+    min-width: 1050px;
+  }
+
+  .audit-input {
+    min-width: 140px;
+  }
+
+  .status-select {
+    width: 145px;
+  }
+
+  .audit-textarea {
+    min-width: 210px;
+  }
+}

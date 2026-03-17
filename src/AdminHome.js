@@ -58,12 +58,13 @@ export default function AdminHome() {
   };
 
   const openDocuments = (auditId) => {
-  localStorage.setItem("adminAuditId", String(auditId));
-  navigate("/admin/documents"); // ✅ matches App.js route
-};
+    localStorage.setItem("adminAuditId", String(auditId));
+    navigate("/admin/documents");
+  };
 
   const saveReview = async (auditId) => {
     const payload = edits[auditId] || {};
+
     if (!payload.assignedAuditor?.trim()) {
       alert("Please assign an auditor before saving.");
       return;
@@ -86,6 +87,7 @@ export default function AdminHome() {
       );
 
       const msg = await res.text();
+
       if (!res.ok) {
         alert(msg || "Failed to save");
         return;
@@ -110,97 +112,107 @@ export default function AdminHome() {
       ) : pendingAudits.length === 0 ? (
         <p>No pending audits 🎉</p>
       ) : (
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>User Email</th>
-              <th>Audit Type</th>
-              <th>Preferred Date</th>
-              <th>Duration</th>
-              <th>Location</th>
-              <th>Assign Auditor</th>
-              <th>Admin Comment</th>
-              <th>Action</th>
-            </tr>
-          </thead>
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th className="col-id">ID</th>
+                <th className="col-email">User Email</th>
+                <th className="col-type">Audit Type</th>
+                <th className="col-date">Preferred Date</th>
+                <th className="col-duration">Duration</th>
+                <th className="col-location">Location</th>
+                <th className="col-auditor">Assign Auditor</th>
+                <th className="col-comment">Admin Comment</th>
+                <th className="col-documents">Documents</th>
+                <th className="col-action">Action</th>
+              </tr>
+            </thead>
 
-          <tbody>
-            {pendingAudits.map((audit) => {
-              const row = edits[audit.auditId] || {
-                assignedAuditor: "",
-                adminComment: "",
-                status: "pending",
-              };
+            <tbody>
+              {pendingAudits.map((audit) => {
+                const row = edits[audit.auditId] || {
+                  assignedAuditor: "",
+                  adminComment: "",
+                  status: "pending",
+                };
 
-              return (
-                <tr key={audit.auditId}>
-                  <td>{audit.auditId}</td>
-                  <td>{audit.loginEmail}</td>
-                  <td>{audit.auditType}</td>
-                  <td>{audit.preferredDate}</td>
-                  <td>{audit.duration}</td>
-                  <td>{audit.auditLocation}</td>
+                const statusClass = `admin-select status-${String(
+                  row.status || "pending"
+                ).toLowerCase()}`;
 
-                  <td style={{ minWidth: 180 }}>
-                    <input
-                      className="admin-input"
-                      value={row.assignedAuditor}
-                      onChange={(e) =>
-                        onEditChange(audit.auditId, "assignedAuditor", e.target.value)
-                      }
-                      placeholder="Auditor name/email"
-                    />
+                return (
+                  <tr key={audit.auditId}>
+                    <td className="col-id">{audit.auditId}</td>
+                    <td className="col-email">{audit.loginEmail}</td>
+                    <td className="col-type">{audit.auditType}</td>
+                    <td className="col-date">{audit.preferredDate}</td>
+                    <td className="col-duration">{audit.duration}</td>
+                    <td className="col-location">{audit.auditLocation}</td>
 
-                    <select
-                      className="admin-select"
-                      value={row.status}
-                      onChange={(e) =>
-                        onEditChange(audit.auditId, "status", e.target.value)
-                      }
-                      style={{ marginTop: 6 }}
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="Approved">Approved</option>
-                      <option value="Rejected">Rejected</option>
-                    </select>
-                  </td>
+                    <td className="col-auditor">
+                      <div className="auditor-stack">
+                        <input
+                          className="admin-input"
+                          value={row.assignedAuditor}
+                          onChange={(e) =>
+                            onEditChange(audit.auditId, "assignedAuditor", e.target.value)
+                          }
+                          placeholder="Auditor name/email"
+                        />
 
-                  <td style={{ minWidth: 260 }}>
-                    <textarea
-                      className="admin-textarea"
-                      value={row.adminComment}
-                      onChange={(e) =>
-                        onEditChange(audit.auditId, "adminComment", e.target.value)
-                      }
-                      rows={3}
-                      placeholder="Write comment for auditor/user..."
-                    />
-                  </td>
+                        <select
+                          className={statusClass}
+                          value={row.status}
+                          onChange={(e) =>
+                            onEditChange(audit.auditId, "status", e.target.value)
+                          }
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="approved">Approved</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                      </div>
+                    </td>
 
-                  <td style={{ whiteSpace: "nowrap" }}>
-                    {/* ✅ Documents button BEFORE Save */}
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => openDocuments(audit.auditId)}
-                      style={{ marginRight: 8 }}
-                    >
-                      Documents
-                    </button>
+                    <td className="col-comment">
+                      <textarea
+                        className="admin-textarea"
+                        value={row.adminComment}
+                        onChange={(e) =>
+                          onEditChange(audit.auditId, "adminComment", e.target.value)
+                        }
+                        rows={3}
+                        placeholder="Write comment for auditor/user..."
+                      />
+                    </td>
 
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => saveReview(audit.auditId)}
-                      disabled={savingId === audit.auditId}
-                    >
-                      {savingId === audit.auditId ? "Saving..." : "Save"}
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    <td className="col-documents documents-cell">
+                      <button
+                        className="documents-btn"
+                        type="button"
+                        onClick={() => openDocuments(audit.auditId)}
+                      >
+                        Documents
+                      </button>
+                    </td>
+
+                    <td className="col-action action-cell">
+                      <button
+                        className="save-btn"
+                        type="button"
+                        onClick={() => saveReview(audit.auditId)}
+                        disabled={savingId === audit.auditId}
+                      >
+                        {savingId === audit.auditId ? "Saving..." : "Save"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

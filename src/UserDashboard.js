@@ -36,22 +36,45 @@ const UserDashboard = () => {
           <ProfileSection
             onProfileSaved={() => {
               localStorage.setItem("profileCompleted", "true");
+              localStorage.setItem("openTab", "products");
               setActiveTab("products");
             }}
           />
         );
+
       case "products":
-        return <ProductsSection onAfterSave={() => setActiveTab("audit")} />;
+        return (
+          <ProductsSection
+            onAfterSave={() => {
+              localStorage.setItem("openTab", "audit");
+              setActiveTab("audit");
+            }}
+          />
+        );
+
       case "audit":
-        return <AuditRequestSection onSubmitted={() => setActiveTab("notifications")} />;
+        return (
+          <AuditRequestSection
+            onSubmitted={() => {
+              localStorage.setItem("openTab", "documents");
+              setActiveTab("documents");
+            }}
+          />
+        );
+
       case "documents":
-  return (
-    <DocumentUploadSection
-      onAfterUpload={() => setActiveTab("notifications")}
-    />
-  );
+        return (
+          <DocumentUploadSection
+            onAfterUpload={() => {
+              localStorage.setItem("openTab", "notifications");
+              setActiveTab("notifications");
+            }}
+          />
+        );
+
       case "notifications":
-  return <UserNotifications />;
+        return <UserNotifications />;
+
       default:
         return null;
     }
@@ -104,12 +127,18 @@ const NotificationsSection = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      if (!loginEmail) { setItems([]); return; }
+      if (!loginEmail) {
+        setItems([]);
+        return;
+      }
 
       const res = await fetch(
         `${API_BASE}/api/audit-details/user?loginEmail=${encodeURIComponent(loginEmail)}`
       );
-      if (!res.ok) { setItems([]); return; }
+      if (!res.ok) {
+        setItems([]);
+        return;
+      }
 
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
@@ -121,7 +150,9 @@ const NotificationsSection = () => {
     }
   };
 
-  useEffect(() => { fetchNotifications(); }, []);
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   return (
     <div className="products-wrap">
@@ -151,7 +182,14 @@ const NotificationsSection = () => {
                 background: "rgba(255,255,255,.06)",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
                 <div style={{ fontWeight: 900 }}>
                   {n.auditType || "Audit Request"}{" "}
                   {n.preferredDate && (
@@ -177,14 +215,32 @@ const NotificationsSection = () => {
                 </span>
               </div>
 
-              <div style={{ marginTop: 10, fontSize: 13, opacity: 0.9, display: "grid", gap: 4 }}>
-                <div><b>Location:</b> {n.auditLocation || "-"}</div>
-                <div><b>Duration:</b> {n.duration || "-"}</div>
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 13,
+                  opacity: 0.9,
+                  display: "grid",
+                  gap: 4,
+                }}
+              >
+                <div>
+                  <b>Location:</b> {n.auditLocation || "-"}
+                </div>
+                <div>
+                  <b>Duration:</b> {n.duration || "-"}
+                </div>
                 <div>
                   <b>ISO:</b>{" "}
-                  {Array.isArray(n.isoStandards) ? n.isoStandards.join(", ") : n.isoStandards || "-"}
+                  {Array.isArray(n.isoStandards)
+                    ? n.isoStandards.join(", ")
+                    : n.isoStandards || "-"}
                 </div>
-                {n.adminComment && <div><b>Admin Comment:</b> {n.adminComment}</div>}
+                {n.adminComment && (
+                  <div>
+                    <b>Admin Comment:</b> {n.adminComment}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -268,7 +324,9 @@ const ProfileSection = ({ onProfileSaved }) => {
     }
   };
 
-  useEffect(() => { fetchProfile(); }, []);
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
   const handleSaveOrUpdate = async (e) => {
     e.preventDefault();
@@ -295,7 +353,10 @@ const ProfileSection = ({ onProfileSaved }) => {
       });
 
       const msg = await res.text();
-      if (!res.ok) { alert(msg || "Profile update failed"); return; }
+      if (!res.ok) {
+        alert(msg || "Profile update failed");
+        return;
+      }
 
       alert(msg || "Profile updated successfully ✅");
       setIsEditing(false);
@@ -320,7 +381,10 @@ const ProfileSection = ({ onProfileSaved }) => {
   };
 
   const cancelEdit = () => {
-    if (backup) { setProfile(backup.profile); setOrganization(backup.organization); }
+    if (backup) {
+      setProfile(backup.profile);
+      setOrganization(backup.organization);
+    }
     setIsEditing(false);
     setBackup(null);
   };
@@ -336,11 +400,25 @@ const ProfileSection = ({ onProfileSaved }) => {
         </div>
         <div className="profile-actions">
           {!isEditing ? (
-            <button type="button" className="edit-profile-btn" onClick={startEdit}>✏️ Edit Profile</button>
+            <button type="button" className="edit-profile-btn" onClick={startEdit}>
+              ✏️ Edit Profile
+            </button>
           ) : (
             <>
-              <button type="button" className="cancel-profile-btn" onClick={cancelEdit} disabled={loading}>Cancel</button>
-              <button type="submit" form="profileForm" className="update-profile-btn" disabled={loading}>
+              <button
+                type="button"
+                className="cancel-profile-btn"
+                onClick={cancelEdit}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="profileForm"
+                className="update-profile-btn"
+                disabled={loading}
+              >
                 {loading ? "Updating..." : "Update Profile"}
               </button>
             </>
@@ -353,21 +431,52 @@ const ProfileSection = ({ onProfileSaved }) => {
           <div className="panel-body">
             <div className="two-col">
               <div className="col">
-                <Row label="Login Email"><input name="loginEmail" value={loginEmail} disabled /></Row>
+                <Row label="Login Email">
+                  <input name="loginEmail" value={loginEmail} disabled />
+                </Row>
                 <Row label="First name" required>
-                  <input name="firstName" value={profile.firstName} onChange={onProfileChange} required disabled={disabled} />
+                  <input
+                    name="firstName"
+                    value={profile.firstName}
+                    onChange={onProfileChange}
+                    required
+                    disabled={disabled}
+                  />
                 </Row>
                 <Row label="Last name" required>
-                  <input name="lastName" value={profile.lastName} onChange={onProfileChange} required disabled={disabled} />
+                  <input
+                    name="lastName"
+                    value={profile.lastName}
+                    onChange={onProfileChange}
+                    required
+                    disabled={disabled}
+                  />
                 </Row>
                 <Row label="Display name" required>
-                  <input name="displayName" value={profile.displayName} onChange={onProfileChange} required disabled={disabled} />
+                  <input
+                    name="displayName"
+                    value={profile.displayName}
+                    onChange={onProfileChange}
+                    required
+                    disabled={disabled}
+                  />
                 </Row>
                 <Row label="Notification email">
-                  <input name="notificationEmail" value={profile.notificationEmail} onChange={onProfileChange} placeholder="Enter email" disabled={disabled} />
+                  <input
+                    name="notificationEmail"
+                    value={profile.notificationEmail}
+                    onChange={onProfileChange}
+                    placeholder="Enter email"
+                    disabled={disabled}
+                  />
                 </Row>
                 <Row label="Language">
-                  <select name="language" value={profile.language} onChange={onProfileChange} disabled={disabled}>
+                  <select
+                    name="language"
+                    value={profile.language}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  >
                     <option>English</option>
                     <option>Hindi</option>
                     <option>Marathi</option>
@@ -377,16 +486,36 @@ const ProfileSection = ({ onProfileSaved }) => {
 
               <div className="col">
                 <Row label="Phone">
-                  <input name="phone" value={profile.phone} onChange={onProfileChange} disabled={disabled} />
+                  <input
+                    name="phone"
+                    value={profile.phone}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  />
                 </Row>
                 <Row label="Mobile">
-                  <input name="mobile" value={profile.mobile} onChange={onProfileChange} disabled={disabled} />
+                  <input
+                    name="mobile"
+                    value={profile.mobile}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  />
                 </Row>
                 <Row label="Fax">
-                  <input name="fax" value={profile.fax} onChange={onProfileChange} disabled={disabled} />
+                  <input
+                    name="fax"
+                    value={profile.fax}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  />
                 </Row>
                 <Row label="Organization size">
-                  <select name="organizationSize" value={profile.organizationSize} onChange={onProfileChange} disabled={disabled}>
+                  <select
+                    name="organizationSize"
+                    value={profile.organizationSize}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  >
                     <option>Select</option>
                     <option>1–10</option>
                     <option>11–50</option>
@@ -396,12 +525,24 @@ const ProfileSection = ({ onProfileSaved }) => {
                   </select>
                 </Row>
                 <Row label="Industry">
-                  <select name="industry" value={profile.industry} onChange={onProfileChange} disabled={disabled}>
-                    {industries.map((x) => <option key={x}>{x}</option>)}
+                  <select
+                    name="industry"
+                    value={profile.industry}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  >
+                    {industries.map((x) => (
+                      <option key={x}>{x}</option>
+                    ))}
                   </select>
                 </Row>
                 <Row label="Job title">
-                  <input name="jobTitle" value={profile.jobTitle} onChange={onProfileChange} disabled={disabled} />
+                  <input
+                    name="jobTitle"
+                    value={profile.jobTitle}
+                    onChange={onProfileChange}
+                    disabled={disabled}
+                  />
                 </Row>
               </div>
             </div>
@@ -409,7 +550,12 @@ const ProfileSection = ({ onProfileSaved }) => {
         </section>
 
         <section className="panel">
-          <button className="panel-head" type="button" onClick={() => setOpenAddress((s) => !s)} aria-expanded={openAddress}>
+          <button
+            className="panel-head"
+            type="button"
+            onClick={() => setOpenAddress((s) => !s)}
+            aria-expanded={openAddress}
+          >
             <span className={`chev ${openAddress ? "open" : ""}`}>▸</span>
             <span className="panel-title">Organization information</span>
           </button>
@@ -419,26 +565,59 @@ const ProfileSection = ({ onProfileSaved }) => {
               <div className="two-col">
                 <div className="col">
                   <Row label="Company">
-                    <input name="company" value={organization.company} onChange={onOrgChange} disabled={disabled} />
+                    <input
+                      name="company"
+                      value={organization.company}
+                      onChange={onOrgChange}
+                      disabled={disabled}
+                    />
                   </Row>
                   <Row label="Address">
-                    <textarea name="address" value={organization.address} onChange={onOrgChange} rows={4} disabled={disabled} />
+                    <textarea
+                      name="address"
+                      value={organization.address}
+                      onChange={onOrgChange}
+                      rows={4}
+                      disabled={disabled}
+                    />
                   </Row>
                   <Row label="Postal code">
-                    <input name="postalCode" value={organization.postalCode} onChange={onOrgChange} disabled={disabled} />
+                    <input
+                      name="postalCode"
+                      value={organization.postalCode}
+                      onChange={onOrgChange}
+                      disabled={disabled}
+                    />
                   </Row>
                 </div>
                 <div className="col">
                   <Row label="City">
-                    <input name="city" value={organization.city} onChange={onOrgChange} disabled={disabled} />
+                    <input
+                      name="city"
+                      value={organization.city}
+                      onChange={onOrgChange}
+                      disabled={disabled}
+                    />
                   </Row>
                   <Row label="Country">
-                    <select name="country" value={organization.country} onChange={onOrgChange} disabled={disabled}>
-                      {countries.map((c) => <option key={c}>{c}</option>)}
+                    <select
+                      name="country"
+                      value={organization.country}
+                      onChange={onOrgChange}
+                      disabled={disabled}
+                    >
+                      {countries.map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
                     </select>
                   </Row>
                   <Row label="State">
-                    <input name="state" value={organization.state} onChange={onOrgChange} disabled={disabled} />
+                    <input
+                      name="state"
+                      value={organization.state}
+                      onChange={onOrgChange}
+                      disabled={disabled}
+                    />
                   </Row>
                 </div>
               </div>
@@ -451,7 +630,9 @@ const ProfileSection = ({ onProfileSaved }) => {
             <button className="save" type="submit" disabled={loading}>
               {loading ? "Updating..." : "Update Profile"}
             </button>
-            <div className="req-note"><span className="req">*</span> required field</div>
+            <div className="req-note">
+              <span className="req">*</span> required field
+            </div>
           </div>
         )}
       </form>
@@ -464,13 +645,16 @@ const ProfileSection = ({ onProfileSaved }) => {
 const ProductsSection = ({ onAfterSave }) => {
   const loginEmail = localStorage.getItem("username") || "";
 
-  const isoProducts = useMemo(() => [
-    { id: "ISO9001", title: "ISO 9001", desc: "Quality Management System (QMS)" },
-    { id: "ISO14001", title: "ISO 14001", desc: "Environmental Management System (EMS)" },
-    { id: "ISO45001", title: "ISO 45001", desc: "Occupational Health & Safety (OH&S)" },
-    { id: "ISO27001", title: "ISO 27001", desc: "Information Security (ISMS)" },
-    { id: "ISO22000", title: "ISO 22000", desc: "Food Safety (FSMS)" },
-  ], []);
+  const isoProducts = useMemo(
+    () => [
+      { id: "ISO9001", title: "ISO 9001", desc: "Quality Management System (QMS)" },
+      { id: "ISO14001", title: "ISO 14001", desc: "Environmental Management System (EMS)" },
+      { id: "ISO45001", title: "ISO 45001", desc: "Occupational Health & Safety (OH&S)" },
+      { id: "ISO27001", title: "ISO 27001", desc: "Information Security (ISMS)" },
+      { id: "ISO22000", title: "ISO 22000", desc: "Food Safety (FSMS)" },
+    ],
+    []
+  );
 
   const [selected, setSelected] = useState(() => {
     const saved = localStorage.getItem("selectedIsoProducts");
@@ -482,7 +666,9 @@ const ProductsSection = ({ onAfterSave }) => {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return isoProducts;
-    return isoProducts.filter((p) => `${p.id} ${p.title} ${p.desc}`.toLowerCase().includes(q));
+    return isoProducts.filter((p) =>
+      `${p.id} ${p.title} ${p.desc}`.toLowerCase().includes(q)
+    );
   }, [query, isoProducts]);
 
   const toggle = (id) => {
@@ -497,7 +683,9 @@ const ProductsSection = ({ onAfterSave }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginEmail, products: selected }),
       });
-    } catch (e) {}
+    } catch (e) {
+      console.error("Products save error:", e);
+    }
     alert("Products saved ✅");
     if (typeof onAfterSave === "function") onAfterSave();
   };
@@ -517,13 +705,22 @@ const ProductsSection = ({ onAfterSave }) => {
             placeholder="Search ISO products... (ex: 9001, security)"
           />
           {query && (
-            <button className="product-search-clear" type="button" onClick={() => setQuery("")} aria-label="Clear search">✕</button>
+            <button
+              className="product-search-clear"
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
           )}
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="no-results">No products found for <b>{query}</b></div>
+        <div className="no-results">
+          No products found for <b>{query}</b>
+        </div>
       ) : (
         <div className="products-grid">
           {filtered.map((p) => {
@@ -535,11 +732,15 @@ const ProductsSection = ({ onAfterSave }) => {
                 onClick={() => toggle(p.id)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") toggle(p.id); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") toggle(p.id);
+                }}
               >
                 <div className="product-top">
                   <h3 className="product-title">{p.title}</h3>
-                  <span className={`chip ${active ? "chip-on" : ""}`}>{active ? "Selected" : "Select"}</span>
+                  <span className={`chip ${active ? "chip-on" : ""}`}>
+                    {active ? "Selected" : "Select"}
+                  </span>
                 </div>
                 <p className="muted">{p.desc}</p>
                 <div className="check-row" onClick={(e) => e.stopPropagation()}>
@@ -553,7 +754,11 @@ const ProductsSection = ({ onAfterSave }) => {
       )}
 
       <div className="products-actions">
-        <button className="update-profile-btn" onClick={handleSave} disabled={selected.length === 0}>
+        <button
+          className="update-profile-btn"
+          onClick={handleSave}
+          disabled={selected.length === 0}
+        >
           Save & Continue →
         </button>
       </div>
@@ -583,13 +788,16 @@ const AuditRequestSection = ({ onSubmitted }) => {
         if (!res.ok) return;
         const data = await res.json();
         const normalized = Array.isArray(data)
-          ? data.map((x) => ({
-              id: x.id || x.isoCode || x.code,
-              label: x.label || x.isoName || x.title || x.id || x.isoCode,
-            })).filter((x) => x.id)
+          ? data
+              .map((x) => ({
+                id: x.id || x.isoCode || x.code,
+                label: x.label || x.isoName || x.title || x.id || x.isoCode,
+              }))
+              .filter((x) => x.id)
           : [];
         if (normalized.length) setIsoStandardOptions(normalized);
       } catch (e) {
+        console.error("ISO load error:", e);
       } finally {
         setIsoLoading(false);
       }
@@ -635,47 +843,53 @@ const AuditRequestSection = ({ onSubmitted }) => {
   const toggleIsoStandard = (id) => {
     setForm((f) => {
       const exists = (f.isoStandards || []).includes(id);
-      const next = exists ? f.isoStandards.filter((x) => x !== id) : [...(f.isoStandards || []), id];
+      const next = exists
+        ? f.isoStandards.filter((x) => x !== id)
+        : [...(f.isoStandards || []), id];
       localStorage.setItem("selectedIsoProducts", JSON.stringify(next));
       return { ...f, isoStandards: next };
     });
   };
 
   const submitAuditRequest = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!form.isoStandards || form.isoStandards.length === 0) {
-    alert("Please select at least one ISO standard.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/api/audit-details`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      alert((data && (data.message || data.error)) || "Audit request failed");
+    if (!form.isoStandards || form.isoStandards.length === 0) {
+      alert("Please select at least one ISO standard.");
       return;
     }
 
-    const createdAuditId = data?.auditId || data?.id;
-    if (createdAuditId) {
-      localStorage.setItem("currentAuditId", String(createdAuditId));
+    try {
+      setSubmitting(true);
+
+      const res = await fetch(`${API_BASE}/api/audit-details`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        alert((data && (data.message || data.error)) || "Audit request failed");
+        return;
+      }
+
+      const createdAuditId = data?.auditId || data?.id;
+      if (createdAuditId) {
+        localStorage.setItem("currentAuditId", String(createdAuditId));
+      }
+
+      alert(data?.message || "Audit request submitted ✅");
+
+      if (typeof onSubmitted === "function") onSubmitted();
+    } catch (err) {
+      console.error(err);
+      alert("Server not reachable. Check Spring Boot is running on port 8080.");
+    } finally {
+      setSubmitting(false);
     }
-
-    alert(data?.message || "Audit request submitted ✅");
-
-    if (typeof onSubmitted === "function") onSubmitted();
-  } catch (err) {
-    console.error(err);
-    alert("Server not reachable. Check Spring Boot is running on port 8080.");
-  }
-};
+  };
 
   return (
     <div className="audit-wrap">
@@ -692,26 +906,40 @@ const AuditRequestSection = ({ onSubmitted }) => {
 
       <form className="panel audit-form" onSubmit={submitAuditRequest}>
         <div className="panel-body">
-
-          {/* ISO Selection */}
           <section className="panel" style={{ marginBottom: 14 }}>
             <div className="panel-body">
               <h3 style={{ margin: 0, marginBottom: 10 }}>ISO Standard Selection</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: 10,
+                }}
+              >
                 {isoStandardOptions.map((opt) => {
                   const checked = (form.isoStandards || []).includes(opt.id);
                   return (
                     <label
                       key={opt.id}
                       style={{
-                        display: "flex", gap: 10, alignItems: "center",
-                        padding: "10px 12px", borderRadius: 14,
+                        display: "flex",
+                        gap: 10,
+                        alignItems: "center",
+                        padding: "10px 12px",
+                        borderRadius: 14,
                         border: "1px solid rgba(255,255,255,0.14)",
-                        background: checked ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.05)",
-                        cursor: "pointer", userSelect: "none",
+                        background: checked
+                          ? "rgba(255,255,255,0.08)"
+                          : "rgba(255,255,255,0.05)",
+                        cursor: "pointer",
+                        userSelect: "none",
                       }}
                     >
-                      <input type="checkbox" checked={checked} onChange={() => toggleIsoStandard(opt.id)} />
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleIsoStandard(opt.id)}
+                      />
                       <span style={{ fontWeight: 800 }}>{opt.label}</span>
                     </label>
                   );
@@ -720,14 +948,19 @@ const AuditRequestSection = ({ onSubmitted }) => {
             </div>
           </section>
 
-          {/* Audit Details */}
           <section className="panel" style={{ marginBottom: 14 }}>
             <div className="panel-body">
               <h3 style={{ margin: 0, marginBottom: 10 }}>Audit Details</h3>
               <div className="two-col">
                 <div className="col">
                   <Row label="Preferred Date" required>
-                    <input type="date" name="preferredDate" value={form.preferredDate} onChange={onChange} required />
+                    <input
+                      type="date"
+                      name="preferredDate"
+                      value={form.preferredDate}
+                      onChange={onChange}
+                      required
+                    />
                   </Row>
                   <Row label="Audit Type" required>
                     <select name="auditType" value={form.auditType} onChange={onChange}>
@@ -748,13 +981,29 @@ const AuditRequestSection = ({ onSubmitted }) => {
                 </div>
                 <div className="col">
                   <Row label="Audit Location" required>
-                    <input name="auditLocation" value={form.auditLocation} onChange={onChange} placeholder="Office / Plant / City" required />
+                    <input
+                      name="auditLocation"
+                      value={form.auditLocation}
+                      onChange={onChange}
+                      placeholder="Office / Plant / City"
+                      required
+                    />
                   </Row>
                   <Row label="Scope of Certification">
-                    <textarea name="scope" value={form.scope} onChange={onChange} rows={3} />
+                    <textarea
+                      name="scope"
+                      value={form.scope}
+                      onChange={onChange}
+                      rows={3}
+                    />
                   </Row>
                   <Row label="Notes">
-                    <textarea name="notes" value={form.notes} onChange={onChange} rows={3} />
+                    <textarea
+                      name="notes"
+                      value={form.notes}
+                      onChange={onChange}
+                      rows={3}
+                    />
                   </Row>
                 </div>
               </div>
@@ -775,9 +1024,7 @@ const AuditRequestSection = ({ onSubmitted }) => {
 /* ================= DOCUMENT UPLOAD SECTION ================= */
 
 const DocumentUploadSection = ({ onAfterUpload }) => {
-  const loginEmail = localStorage.getItem("username") || "";
-  const auditId = localStorage.getItem("currentAuditId") || ""; // ✅ auditId from audit submit
-
+  const auditId = localStorage.getItem("currentAuditId") || "";
   const selectedIso = JSON.parse(localStorage.getItem("selectedIsoProducts") || "[]") || [];
 
   const allowedExt = useMemo(
@@ -802,11 +1049,8 @@ const DocumentUploadSection = ({ onAfterUpload }) => {
     return [...common, ...isoSpecific];
   }, [selectedIso]);
 
-  // ✅ files chosen by user
-  const [pickedFiles, setPickedFiles] = useState({}); // { [docType]: File }
-
-  // ✅ UI status
-  const [statusMap, setStatusMap] = useState({}); // { [docType]: "Pending" | "Ready" | "Uploading..." | "Uploaded" | "Failed" }
+  const [pickedFiles, setPickedFiles] = useState({});
+  const [statusMap, setStatusMap] = useState({});
   const [uploading, setUploading] = useState(false);
 
   const validateFile = (file) => {
@@ -840,11 +1084,11 @@ const DocumentUploadSection = ({ onAfterUpload }) => {
       body: fd,
     });
 
-    const data = await res.json().catch(() => null);
+    const text = await res.text();
     if (!res.ok) {
-      throw new Error((data && (data.message || data.error)) || "Upload failed");
+      throw new Error(text || "Upload failed");
     }
-    return data;
+    return text;
   };
 
   const handleSaveAndContinue = async () => {
@@ -853,7 +1097,6 @@ const DocumentUploadSection = ({ onAfterUpload }) => {
       return;
     }
 
-    // ✅ require required docs selected
     const missingRequired = docTemplates
       .filter((d) => d.required)
       .filter((d) => !pickedFiles[d.docType]);
@@ -872,7 +1115,7 @@ const DocumentUploadSection = ({ onAfterUpload }) => {
 
       for (const t of docTemplates) {
         const f = pickedFiles[t.docType];
-        if (!f) continue; // skip optional not selected
+        if (!f) continue;
 
         setStatusMap((prev) => ({ ...prev, [t.docType]: "Uploading..." }));
         await uploadOne(t, f);
@@ -945,8 +1188,8 @@ const DocumentUploadSection = ({ onAfterUpload }) => {
                             {t.docType} {t.required && <span className="req">*</span>}
                           </div>
                           <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>
-                            For: <b>{t.isoCode === "ALL" ? "All Standards" : t.isoCode}</b> • Allowed:{" "}
-                            {allowedExt.join(", ")} • Max 10MB
+                            For: <b>{t.isoCode === "ALL" ? "All Standards" : t.isoCode}</b> •
+                            Allowed: {allowedExt.join(", ")} • Max 10MB
                           </div>
 
                           {file && (

@@ -3,20 +3,68 @@ import "../HomePage.css";
 
 export default function Contact() {
   const [contact, setContact] = useState({
-    name: "",
+    fullName: "",
     email: "",
     phone: "",
-    company: "",
-    standard: "",
+    companyName: "",
+    isoStandardCodes: [],
     message: "",
   });
 
-  const handleChange = (e) => setContact({ ...contact, [e.target.name]: e.target.value });
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
 
-  const submit = (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setContact((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleStandardChange = (e) => {
+    setContact((prev) => ({
+      ...prev,
+      isoStandardCodes: e.target.value ? [e.target.value] : [],
+    }));
+  };
+
+  const submit = async (e) => {
     e.preventDefault();
-    alert("✅ Message sent! We will contact you soon.");
-    setContact({ name: "", email: "", phone: "", company: "", standard: "", message: "" });
+    setLoading(true);
+    setMsg("");
+
+    try {
+      const res = await fetch("http://localhost:8080/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(contact),
+      });
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        throw new Error(text || "Failed to send message");
+      }
+
+      setMsg("✅ Message sent! We will contact you soon.");
+
+      setContact({
+        fullName: "",
+        email: "",
+        phone: "",
+        companyName: "",
+        isoStandardCodes: [],
+        message: "",
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      setMsg("❌ " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -56,18 +104,49 @@ export default function Contact() {
           <p className="muted">We’ll respond within 24 hours.</p>
 
           <form className="form" onSubmit={submit}>
-            <input name="name" value={contact.name} onChange={handleChange} placeholder="Full Name" required />
-            <input name="email" value={contact.email} onChange={handleChange} placeholder="Email Address" required />
-            <input name="phone" value={contact.phone} onChange={handleChange} placeholder="Phone Number" required />
-            <input name="company" value={contact.company} onChange={handleChange} placeholder="Company Name" required />
+            <input
+              name="fullName"
+              value={contact.fullName}
+              onChange={handleChange}
+              placeholder="Full Name"
+              required
+            />
 
-            <select name="standard" value={contact.standard} onChange={handleChange} required>
+            <input
+              name="email"
+              type="email"
+              value={contact.email}
+              onChange={handleChange}
+              placeholder="Email Address"
+              required
+            />
+
+            <input
+              name="phone"
+              value={contact.phone}
+              onChange={handleChange}
+              placeholder="Phone Number"
+              required
+            />
+
+            <input
+              name="companyName"
+              value={contact.companyName}
+              onChange={handleChange}
+              placeholder="Company Name"
+            />
+
+            <select
+              value={contact.isoStandardCodes[0] || ""}
+              onChange={handleStandardChange}
+              required
+            >
               <option value="" disabled>Select ISO Standard</option>
-              <option value="ISO 9001">ISO 9001 (Quality)</option>
-              <option value="ISO 14001">ISO 14001 (Environment)</option>
-              <option value="ISO 45001">ISO 45001 (Safety)</option>
-              <option value="ISO 27001">ISO 27001 (Information Security)</option>
-              <option value="ISO 22000">ISO 22000 (Food Safety)</option>
+              <option value="ISO9001">ISO 9001 (Quality)</option>
+              <option value="ISO14001">ISO 14001 (Environment)</option>
+              <option value="ISO45001">ISO 45001 (Safety)</option>
+              <option value="ISO27001">ISO 27001 (Information Security)</option>
+              <option value="ISO22000">ISO 22000 (Food Safety)</option>
             </select>
 
             <textarea
@@ -79,9 +158,11 @@ export default function Contact() {
               required
             />
 
-            <button type="submit" className="btn btn-primary">
-              Send Message
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? "Sending..." : "Send Message"}
             </button>
+
+            {msg && <p style={{ marginTop: "10px" }}>{msg}</p>}
           </form>
         </div>
       </div>

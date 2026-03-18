@@ -1,9 +1,103 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./HomePage.css";
 
 export default function HomePage() {
   const navigate = useNavigate();
+
+  const [callbackForm, setCallbackForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    companyName: "",
+    isoStandardCodes: [],
+    message: "",
+  });
+
+  const [callbackMsg, setCallbackMsg] = useState("");
+  const [callbackLoading, setCallbackLoading] = useState(false);
+
+  const [isoStandards, setIsoStandards] = useState([]);
+  const [isoLoading, setIsoLoading] = useState(true);
+  const [isoError, setIsoError] = useState("");
+
+  useEffect(() => {
+    const fetchIsoStandards = async () => {
+      try {
+        setIsoLoading(true);
+        setIsoError("");
+
+        const res = await fetch("http://localhost:8080/api/iso-standards");
+        if (!res.ok) {
+          throw new Error("Failed to load ISO standards");
+        }
+
+        const data = await res.json();
+        setIsoStandards(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("ISO fetch error:", error);
+        setIsoStandards([]);
+        setIsoError("Unable to load ISO standards");
+      } finally {
+        setIsoLoading(false);
+      }
+    };
+
+    fetchIsoStandards();
+  }, []);
+
+  const handleCallbackChange = (e) => {
+    const { name, value } = e.target;
+    setCallbackForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleCallbackStandard = (e) => {
+    setCallbackForm((prev) => ({
+      ...prev,
+      isoStandardCodes: e.target.value ? [e.target.value] : [],
+    }));
+  };
+
+  const submitCallback = async (e) => {
+    e.preventDefault();
+    setCallbackLoading(true);
+    setCallbackMsg("");
+
+    try {
+      const res = await fetch("http://localhost:8080/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(callbackForm),
+      });
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        throw new Error(text || "Failed to send request");
+      }
+
+      setCallbackMsg("✅ Request submitted successfully");
+
+      setCallbackForm({
+        fullName: "",
+        email: "",
+        phone: "",
+        companyName: "",
+        isoStandardCodes: [],
+        message: "",
+      });
+    } catch (error) {
+      console.error("Callback submit error:", error);
+      setCallbackMsg("❌ " + error.message);
+    } finally {
+      setCallbackLoading(false);
+    }
+  };
 
   return (
     <div>
@@ -63,28 +157,89 @@ export default function HomePage() {
               <h3>Request a Callback</h3>
               <p className="muted">We’ll call you within 24 hours.</p>
 
-              <form className="form" onSubmit={(e) => e.preventDefault()}>
-                <input type="text" placeholder="Full Name" />
-                <input type="email" placeholder="Email Address" />
-                <input type="text" placeholder="Company Name" />
-                <select defaultValue="">
+              <form className="form" onSubmit={submitCallback}>
+                <input
+                  type="text"
+                  name="fullName"
+                  placeholder="Full Name"
+                  value={callbackForm.fullName}
+                  onChange={handleCallbackChange}
+                  required
+                />
+
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email Address"
+                  value={callbackForm.email}
+                  onChange={handleCallbackChange}
+                  required
+                />
+
+                <input
+                  type="text"
+                  name="phone"
+                  placeholder="Phone Number"
+                  value={callbackForm.phone}
+                  onChange={handleCallbackChange}
+                  required
+                />
+
+                <input
+                  type="text"
+                  name="companyName"
+                  placeholder="Company Name"
+                  value={callbackForm.companyName}
+                  onChange={handleCallbackChange}
+                />
+
+                <select
+                  value={callbackForm.isoStandardCodes[0] || ""}
+                  onChange={handleCallbackStandard}
+                  required
+                  disabled={isoLoading || isoStandards.length === 0}
+                >
                   <option value="" disabled>
-                    Select ISO Standard
+                    {isoLoading
+                      ? "Loading ISO Standards..."
+                      : isoStandards.length === 0
+                      ? "No ISO Standards Available"
+                      : "Select ISO Standard"}
                   </option>
-                  <option>ISO 9001 (Quality)</option>
-                  <option>ISO 14001 (Environment)</option>
-                  <option>ISO 45001 (Safety)</option>
-                  <option>ISO 27001 (Information Security)</option>
-                  <option>ISO 22000 (Food Safety)</option>
+
+                  {isoStandards.map((iso) => (
+                    <option key={iso.isoId} value={iso.isoCode}>
+                      {iso.isoCode} - {iso.isoName}
+                    </option>
+                  ))}
                 </select>
 
+                {isoError && (
+                  <p style={{ marginTop: "8px", color: "red", fontSize: "14px" }}>
+                    {isoError}
+                  </p>
+                )}
+
+                <textarea
+                  name="message"
+                  rows="3"
+                  placeholder="Your Requirement"
+                  value={callbackForm.message}
+                  onChange={handleCallbackChange}
+                  required
+                />
+
                 <button
-                  type="button"
+                  type="submit"
                   className="btn btn-primary"
-                  onClick={() => navigate("/signup")}
+                  disabled={callbackLoading || isoLoading || isoStandards.length === 0}
                 >
-                  Submit
+                  {callbackLoading ? "Submitting..." : "Submit"}
                 </button>
+
+                {callbackMsg && (
+                  <p style={{ marginTop: "10px" }}>{callbackMsg}</p>
+                )}
               </form>
             </div>
 

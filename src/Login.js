@@ -9,27 +9,19 @@ function Login() {
 
   const navigate = useNavigate();
 
-  // ✅ Combined Role Routing
-  const getRouteByRoleId = (roleid) => {
-    const id = Number(roleid);
-
-    if (id === 1) return "/admin";   // Admin
-    if (id === 2) return "/user";    // User / Faculty
-
-    // ✅ Coordinator + Auditor Combined
-    if (id === 3 || id === 4) return "/staff";
-
-    return "/"; // fallback
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       const response = await fetch("http://localhost:8080/api/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
       });
 
       if (!response.ok) {
@@ -39,21 +31,37 @@ function Login() {
       }
 
       const data = await response.json();
-console.log("LOGIN RESPONSE =>", data);
 
-if (data.message === "Login Successfully") {
-  const roleid = Number(data.roleid);
+      console.log("LOGIN RESPONSE =>", data);
 
-  localStorage.setItem("username", data.username || email);
-  localStorage.setItem("roleid", String(roleid));
+      if (data.message === "Login Successfully") {
+        const roleid = Number(data.roleid);
 
-  if (roleid === 1) navigate("/admin");
-  else if (roleid === 2) navigate("/user");
-  else if (roleid === 3 || roleid === 4) navigate("/staff");
-  else navigate("/");
-} else {
-  alert(data.message || "Invalid Login");
-}
+        // Save login data
+        localStorage.setItem("username", data.username || email);
+        localStorage.setItem("roleid", String(roleid));
+        localStorage.setItem("email", email);
+
+        // Role-based routing
+        if (roleid === 1) {
+          navigate("/admin"); // Admin
+        } 
+        else if (roleid === 2) {
+          navigate("/user"); // User / Client
+        } 
+        else if (roleid === 3) {
+          navigate("/staff"); // Coordinator (only if route exists)
+        } 
+        else if (roleid === 4) {
+          navigate("/auditor"); // Auditor
+        } 
+        else {
+          navigate("/");
+        }
+
+      } else {
+        alert(data.message || "Invalid Login");
+      }
 
     } catch (err) {
       console.error(err);

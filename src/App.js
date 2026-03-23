@@ -27,11 +27,12 @@ import AdminNC from "./AdminNC";
 
 /* ✅ USER / STAFF DASHBOARD */
 import UserDashboard from "./UserDashboard";
-import StaffDashboard from "./StaffDashboard";
+import AuditorDashboard from "./AuditorDashboard";
 
 /* ✅ NEW PAGES */
 import UserNotifications from "./UserNotifications";
 import AdminAuditRequests from "./AdminAuditRequests";
+
 
 function App() {
   return (
@@ -72,7 +73,7 @@ function App() {
         {/* ✅ NEW: User Notifications page */}
         <Route path="/user/notifications" element={<UserNotifications />} /> {/* /user/notifications */}
 
-        <Route path="/staff" element={<StaffDashboard />} />
+        <Route path="/auditor" element={<AuditorDashboard />} />
 
         {/* ================= 404 PAGE ================= */}
         <Route
@@ -82,7 +83,9 @@ function App() {
               404 Page Not Found ❌
             </h2>
           }
+          
         />
+       
       </Routes>
     </BrowserRouter>
   );

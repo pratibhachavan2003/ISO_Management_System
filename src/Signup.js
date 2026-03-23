@@ -9,7 +9,7 @@ function Signup() {
     email: "",
     password: "",
     confirmPassword: "",
-    roleid: 4, // ✅ Default USER role (example)
+    roleid: 2, // ✅ Default USER role (example)
   });
 
   const navigate = useNavigate();

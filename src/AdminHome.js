@@ -170,6 +170,7 @@ export default function AdminHome() {
                         >
                           <option value="pending">Pending</option>
                           <option value="approved">Approved</option>
+                          <option value="Assigned">Assigned</option>
                           <option value="rejected">Rejected</option>
                         </select>
                       </div>

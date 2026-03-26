@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./AuditorDashboard.css";
 
 const API_BASE = "http://localhost:8080/api";
 
 export default function AuditorDashboard() {
+  const navigate = useNavigate();
   const auditorEmail = localStorage.getItem("email") || "";
 
   const [audits, setAudits] = useState([]);
@@ -29,6 +31,11 @@ export default function AuditorDashboard() {
   const clearMessages = () => {
     setMsg("");
     setError("");
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/login");
   };
 
   const fetchAssignedAudits = async () => {
@@ -136,17 +143,14 @@ export default function AuditorDashboard() {
       clearMessages();
       setSavingRemark(true);
 
-      const res = await fetch(
-        `${API_BASE}/audit/${selectedAudit.auditId}/remark`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            auditorEmail,
-            remark,
-          }),
-        }
-      );
+      const res = await fetch(`${API_BASE}/audit/${selectedAudit.auditId}/remark`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auditorEmail,
+          remark,
+        }),
+      });
 
       const text = await res.text();
 
@@ -181,18 +185,15 @@ export default function AuditorDashboard() {
       clearMessages();
       setSavingStatus(true);
 
-      const res = await fetch(
-        `${API_BASE}/audit/${selectedAudit.auditId}/status`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            auditorEmail,
-            status: finalStatus,
-            message: statusMessage,
-          }),
-        }
-      );
+      const res = await fetch(`${API_BASE}/audit/${selectedAudit.auditId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auditorEmail,
+          status: finalStatus,
+          message: statusMessage,
+        }),
+      });
 
       const text = await res.text();
 
@@ -226,18 +227,15 @@ export default function AuditorDashboard() {
       clearMessages();
       setSavingStatus(true);
 
-      const res = await fetch(
-        `${API_BASE}/audit/${selectedAudit.auditId}/status`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            auditorEmail,
-            status: selectedAudit.status || status || "In Progress",
-            message: `ADMIN NOTICE: ${statusMessage}`,
-          }),
-        }
-      );
+      const res = await fetch(`${API_BASE}/audit/${selectedAudit.auditId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auditorEmail,
+          status: selectedAudit.status || status || "In Progress",
+          message: `ADMIN NOTICE: ${statusMessage}`,
+        }),
+      });
 
       const text = await res.text();
 
@@ -359,6 +357,10 @@ export default function AuditorDashboard() {
             <strong>{stats.completed}</strong>
           </div>
         </div>
+
+        <button className="sidebar-btn logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
       </aside>
 
       <main className="auditor-main">
@@ -401,10 +403,7 @@ export default function AuditorDashboard() {
             onChange={(e) => setSearchText(e.target.value)}
           />
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="ALL">All Status</option>
             <option value="Assigned">Assigned</option>
             <option value="In Progress">In Progress</option>

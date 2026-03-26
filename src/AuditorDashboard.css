@@ -408,6 +408,19 @@ body {
   color: #94a3b8;
 }
 
+.logout-btn {
+  background: #dc2626 !important;
+  color: #fff;
+  margin-top: auto;
+  align-self: flex-start;
+  width: 120px;
+  text-align: center;
+}
+
+.logout-btn:hover {
+  background: #b91c1c !important;
+}
+
 @media (max-width: 1200px) {
   .top-cards {
     grid-template-columns: repeat(2, 1fr);
@@ -445,5 +458,10 @@ body {
 
   .doc-actions {
     flex-direction: row;
+  }
+
+  .logout-btn {
+    margin-top: 0;
+    align-self: flex-start;
   }
 }

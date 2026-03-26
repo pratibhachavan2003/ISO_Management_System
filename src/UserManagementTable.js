@@ -88,38 +88,46 @@ export default function UserManagementTable() {
 
   /* ================= UPDATE USER ================= */
   const saveEdit = async () => {
-    try {
-      const payload = {
-        firstName: editing.firstName,
-        lastName: editing.lastName,
-        email: editing.email,
-        roleid: editing.roleid ?? null,
-      };
+  try {
+    const payload = {
+      firstName: editing.firstName,
+      lastName: editing.lastName,
+      email: editing.email,
+      password: editing.password || "",
+      confirmPassword: editing.confirmPassword || "",
+      roleid: Number(editing.roleid),
+    };
 
-      const res = await fetch(`${API}/${editing.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    const url = `http://localhost:8080/api/employees/${editing.id}`;
 
-      if (!res.ok) {
-        const err = await res.text();
-        alert(err || "Update failed");
-        return;
-      }
+    console.log("PUT URL:", url);
+    console.log("Payload:", payload);
 
-      const updated = await res.json();
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-      // Update UI instantly
-      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    const text = await res.text();
 
-      setEditing(null);
-      alert("Updated ✅");
-    } catch (e) {
-      console.error("Update error:", e);
-      alert("Server not reachable");
+    console.log("Status:", res.status);
+    console.log("Response:", text);
+
+    if (!res.ok) {
+      throw new Error(text || `HTTP ${res.status}`);
     }
-  };
+
+    alert(text || "Employee updated successfully");
+    setEditing(null);
+    fetchUsers();
+  } catch (err) {
+    console.error("Update error:", err);
+    alert(err.message);
+  }
+};
 
   /* ================= UI ================= */
   return (

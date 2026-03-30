@@ -497,3 +497,35 @@
     min-width: 1380px;
   }
 }
+
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+}
+
+.page-btn {
+  padding: 8px 14px;
+  border: none;
+  background: #0f172a;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.page-btn.active {
+  background: #22c55e;
+  font-weight: bold;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dots {
+  padding: 0 6px;
+  color: #94a3b8;
+}

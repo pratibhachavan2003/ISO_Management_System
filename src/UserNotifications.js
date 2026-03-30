@@ -67,7 +67,7 @@ export default function UserNotifications() {
 
       // ⚠️ keep this only if your backend mapping matches
       const res = await fetch(
-        `${API_BASE}/api/audit/${auditId}/documents/${docId}/reupload`,
+        `${API_BASE}/api/audit/documents/${docId}/reupload`,
         { method: "PUT", body: formData }
       );
 

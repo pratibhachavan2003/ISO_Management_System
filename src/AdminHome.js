@@ -8,23 +8,34 @@ export default function AdminHome() {
   const [pendingAudits, setPendingAudits] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // local edit state per row: { [auditId]: { assignedAuditor, adminComment, status } }
+  // ✅ pagination states
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  // edit state
   const [edits, setEdits] = useState({});
   const [savingId, setSavingId] = useState(null);
 
-  const fetchPendingAudits = async () => {
+  // ✅ FETCH WITH PAGE SUPPORT
+  const fetchPendingAudits = async (pageNumber = 0) => {
     try {
       setLoading(true);
 
-      const res = await fetch("http://localhost:8080/api/pending");
+      const res = await fetch(
+        `http://localhost:8080/api/pending?page=${pageNumber}&size=5`
+      );
+
       if (!res.ok) throw new Error("Failed to fetch audits");
 
       const data = await res.json();
-      const list = Array.isArray(data) ? data : [];
+
+      const list = Array.isArray(data.content) ? data.content : [];
 
       setPendingAudits(list);
+      setTotalPages(data.totalPages);
+      setPage(data.number);
 
-      // initialize edit state with existing values
+      // initialize edit state
       const init = {};
       list.forEach((a) => {
         init[a.auditId] = {
@@ -33,6 +44,7 @@ export default function AdminHome() {
           status: a.status || "pending",
         };
       });
+
       setEdits(init);
     } catch (e) {
       console.error("Fetch error:", e);
@@ -42,9 +54,68 @@ export default function AdminHome() {
       setLoading(false);
     }
   };
+const renderPagination = () => {
+  const pages = [];
 
+  // show only first 3 pages + current logic
+  for (let i = 0; i < totalPages; i++) {
+    if (
+      i === 0 ||                 // first page
+      i === totalPages - 1 ||    // last page
+      Math.abs(i - page) <= 1    // near current page
+    ) {
+      pages.push(i);
+    }
+  }
+
+  // remove duplicates
+  const uniquePages = [...new Set(pages)].sort((a, b) => a - b);
+
+  let lastPage = -1;
+
+  return (
+    <div className="pagination">
+      {/* Previous */}
+      <button
+        disabled={page === 0}
+        onClick={() => fetchPendingAudits(page - 1)}
+        className="page-btn"
+      >
+        ← Prev
+      </button>
+
+      {uniquePages.map((p) => {
+        const showDots = p - lastPage > 1;
+        lastPage = p;
+
+        return (
+          <React.Fragment key={p}>
+            {showDots && <span className="dots">...</span>}
+
+            <button
+              className={`page-btn ${page === p ? "active" : ""}`}
+              onClick={() => fetchPendingAudits(p)}
+            >
+              {p + 1}
+            </button>
+          </React.Fragment>
+        );
+      })}
+
+      {/* Next */}
+      <button
+        disabled={page === totalPages - 1}
+        onClick={() => fetchPendingAudits(page + 1)}
+        className="page-btn"
+      >
+        Next →
+      </button>
+    </div>
+  );
+};
+  // load first page
   useEffect(() => {
-    fetchPendingAudits();
+    fetchPendingAudits(0);
   }, []);
 
   const onEditChange = (auditId, field, value) => {
@@ -94,7 +165,9 @@ export default function AdminHome() {
       }
 
       alert(msg || "Saved ✅");
-      await fetchPendingAudits();
+
+      // reload current page
+      await fetchPendingAudits(page);
     } catch (e) {
       console.error(e);
       alert("Server error while saving");
@@ -112,60 +185,62 @@ export default function AdminHome() {
       ) : pendingAudits.length === 0 ? (
         <p>No pending audits 🎉</p>
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th className="col-id">ID</th>
-                <th className="col-email">User Email</th>
-                <th className="col-type">Audit Type</th>
-                <th className="col-date">Preferred Date</th>
-                <th className="col-duration">Duration</th>
-                <th className="col-location">Location</th>
-                <th className="col-auditor">Assign Auditor</th>
-                <th className="col-comment">Admin Comment</th>
-                <th className="col-documents">Documents</th>
-                <th className="col-action">Action</th>
-              </tr>
-            </thead>
+        <>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>User Email</th>
+                  <th>Audit Type</th>
+                  <th>Date</th>
+                  <th>Duration</th>
+                  <th>Location</th>
+                  <th>Assign Auditor</th>
+                  <th>Admin Comment</th>
+                  <th>Documents</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
 
-            <tbody>
-              {pendingAudits.map((audit) => {
-                const row = edits[audit.auditId] || {
-                  assignedAuditor: "",
-                  adminComment: "",
-                  status: "pending",
-                };
+              <tbody>
+                {pendingAudits.map((audit) => {
+                  const row = edits[audit.auditId] || {
+                    assignedAuditor: "",
+                    adminComment: "",
+                    status: "pending",
+                  };
 
-                const statusClass = `admin-select status-${String(
-                  row.status || "pending"
-                ).toLowerCase()}`;
+                  return (
+                    <tr key={audit.auditId}>
+                      <td>{audit.auditId}</td>
+                      <td>{audit.loginEmail}</td>
+                      <td>{audit.auditType}</td>
+                      <td>{audit.preferredDate}</td>
+                      <td>{audit.duration}</td>
+                      <td>{audit.auditLocation}</td>
 
-                return (
-                  <tr key={audit.auditId}>
-                    <td className="col-id">{audit.auditId}</td>
-                    <td className="col-email">{audit.loginEmail}</td>
-                    <td className="col-type">{audit.auditType}</td>
-                    <td className="col-date">{audit.preferredDate}</td>
-                    <td className="col-duration">{audit.duration}</td>
-                    <td className="col-location">{audit.auditLocation}</td>
-
-                    <td className="col-auditor">
-                      <div className="auditor-stack">
+                      <td>
                         <input
                           className="admin-input"
                           value={row.assignedAuditor}
                           onChange={(e) =>
-                            onEditChange(audit.auditId, "assignedAuditor", e.target.value)
+                            onEditChange(
+                              audit.auditId,
+                              "assignedAuditor",
+                              e.target.value
+                            )
                           }
-                          placeholder="Auditor name/email"
                         />
 
                         <select
-                          className={statusClass}
                           value={row.status}
                           onChange={(e) =>
-                            onEditChange(audit.auditId, "status", e.target.value)
+                            onEditChange(
+                              audit.auditId,
+                              "status",
+                              e.target.value
+                            )
                           }
                         >
                           <option value="pending">Pending</option>
@@ -173,47 +248,100 @@ export default function AdminHome() {
                           <option value="Assigned">Assigned</option>
                           <option value="rejected">Rejected</option>
                         </select>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="col-comment">
-                      <textarea
-                        className="admin-textarea"
-                        value={row.adminComment}
-                        onChange={(e) =>
-                          onEditChange(audit.auditId, "adminComment", e.target.value)
-                        }
-                        rows={3}
-                        placeholder="Write comment for auditor/user..."
-                      />
-                    </td>
+                      <td>
+                        <textarea
+                          className="admin-textarea"
+                          value={row.adminComment}
+                          onChange={(e) =>
+                            onEditChange(
+                              audit.auditId,
+                              "adminComment",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </td>
 
-                    <td className="col-documents documents-cell">
-                      <button
-                        className="documents-btn"
-                        type="button"
-                        onClick={() => openDocuments(audit.auditId)}
-                      >
-                        Documents
-                      </button>
-                    </td>
+                      <td>
+                        <button
+                          className="documents-btn"
+                          onClick={() => openDocuments(audit.auditId)}
+                        >
+                          Documents
+                        </button>
+                      </td>
 
-                    <td className="col-action action-cell">
-                      <button
-                        className="save-btn"
-                        type="button"
-                        onClick={() => saveReview(audit.auditId)}
-                        disabled={savingId === audit.auditId}
-                      >
-                        {savingId === audit.auditId ? "Saving..." : "Save"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <td>
+                        <button
+                          className="save-btn"
+                          onClick={() => saveReview(audit.auditId)}
+                          disabled={savingId === audit.auditId}
+                        >
+                          {savingId === audit.auditId ? "Saving..." : "Save"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ✅ PAGINATION BUTTONS */}
+          <div className="pagination">
+
+  {/* PREVIOUS BUTTON */}
+  <button
+    className="page-btn"
+    disabled={page === 0}
+    onClick={() => fetchPendingAudits(page - 1)}
+  >
+    ← Prev
+  </button>
+
+  {/* PAGE NUMBERS */}
+  {[...Array(totalPages)].map((_, index) => {
+    // show only nearby pages
+    if (
+      index === 0 ||
+      index === totalPages - 1 ||
+      Math.abs(index - page) <= 1
+    ) {
+      return (
+        <button
+          key={index}
+          className={`page-btn ${page === index ? "active" : ""}`}
+          onClick={() => fetchPendingAudits(index)}
+        >
+          {index + 1}
+        </button>
+      );
+    }
+
+    // show dots
+    if (
+      index === page - 2 ||
+      index === page + 2
+    ) {
+      return <span key={index} className="dots">...</span>;
+    }
+
+    return null;
+  })}
+
+  {/* NEXT BUTTON */}
+  <button
+    className="page-btn"
+    disabled={page === totalPages - 1}
+    onClick={() => fetchPendingAudits(page + 1)}
+  >
+    Next →
+  </button>
+
+</div>
+        </>
       )}
     </section>
   );

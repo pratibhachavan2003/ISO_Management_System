@@ -529,3 +529,31 @@
   padding: 0 6px;
   color: #94a3b8;
 }
+/* ============================= */
+/* FIX DROPDOWN WHITE COLOR */
+/* ============================= */
+
+.admin-table select,
+select {
+  background-color: #0f172a !important;   /* dark theme */
+  color: #ffffff !important;
+  border: 1px solid #334155 !important;
+  padding: 6px 8px;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* dropdown options */
+.admin-table select option,
+select option {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+/* focus style */
+.admin-table select:focus,
+select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 1px #3b82f6;
+}

@@ -18,42 +18,45 @@ export default function AdminHome() {
 
   // ✅ FETCH WITH PAGE SUPPORT
   const fetchPendingAudits = async (pageNumber = 0) => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const res = await fetch(
-        `http://localhost:8080/api/pending?page=${pageNumber}&size=5`
-      );
+    const res = await fetch(
+      `http://localhost:8080/api/pending?page=${pageNumber}&size=5`
+    );
 
-      if (!res.ok) throw new Error("Failed to fetch audits");
-
-      const data = await res.json();
-
-      const list = Array.isArray(data.content) ? data.content : [];
-
-      setPendingAudits(list);
-      setTotalPages(data.totalPages);
-      setPage(data.number);
-
-      // initialize edit state
-      const init = {};
-      list.forEach((a) => {
-        init[a.auditId] = {
-          assignedAuditor: a.assignedAuditor || "",
-          adminComment: a.adminComment || "",
-          status: a.status || "pending",
-        };
-      });
-
-      setEdits(init);
-    } catch (e) {
-      console.error("Fetch error:", e);
-      setPendingAudits([]);
-      setEdits({});
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      throw new Error("API failed");
     }
-  };
+
+    const data = await res.json();
+
+    console.log("API RESPONSE:", data); // ✅ DEBUG
+
+    // SAFE DATA HANDLING (main fix)
+    const list = data?.content ?? [];
+
+    setPendingAudits(list);
+    setTotalPages(data?.totalPages ?? 0);
+    setPage(data?.number ?? 0);
+
+    const init = {};
+    list.forEach((a) => {
+      init[a.auditId] = {
+        assignedAuditor: a.assignedAuditor || "",
+        adminComment: a.adminComment || "",
+        status: a.status || "pending",
+      };
+    });
+
+    setEdits(init);
+  } catch (err) {
+    console.error("Fetch Error:", err);
+    setPendingAudits([]); // prevents blank screen
+  } finally {
+    setLoading(false);
+  }
+};
 const renderPagination = () => {
   const pages = [];
 

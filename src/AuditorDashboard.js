@@ -118,6 +118,14 @@ export default function AuditorDashboard() {
       setDocuments(Array.isArray(data.documents) ? data.documents : []);
 
       await fetchAuditUpdates(auditId);
+
+      // Smooth scroll to details after clicking view
+      setTimeout(() => {
+        const detailsSection = document.getElementById("audit-details-section");
+        if (detailsSection) {
+          detailsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 200);
     } catch (err) {
       setError(err.message || "Failed to load audit details");
       setSelectedAudit(null);
@@ -416,7 +424,8 @@ export default function AuditorDashboard() {
         </div>
 
         <div className="content-grid">
-          <section className="panel">
+          {/* FULL WIDTH AUDIT LIST */}
+          <section className="panel full-width-panel">
             <div className="panel-head">
               <h3>Audit List</h3>
             </div>
@@ -466,7 +475,11 @@ export default function AuditorDashboard() {
             )}
           </section>
 
-          <section className="panel">
+          {/* AUDIT DETAILS BELOW */}
+          <section
+            className="panel full-width-panel audit-details-panel"
+            id="audit-details-section"
+          >
             <div className="panel-head">
               <h3>Audit Details</h3>
             </div>
@@ -474,7 +487,7 @@ export default function AuditorDashboard() {
             {loadingDetails ? (
               <p className="muted">Loading audit details...</p>
             ) : !selectedAudit ? (
-              <p className="muted">Select an audit from the left side.</p>
+              <p className="muted">Select an audit from the audit list above.</p>
             ) : (
               <>
                 <div className="details-box">

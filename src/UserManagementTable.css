@@ -1,0 +1,135 @@
+.um-section {
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.um-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.um-search {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(5, 10, 20, 0.35);
+  color: white;
+}
+
+.um-table-wrap {
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
+.um-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.um-table th,
+.um-table td {
+  padding: 12px;
+  text-align: left;
+}
+
+.um-table th {
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+}
+
+.um-table tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.um-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.um-btn {
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.um-btn.edit {
+  background: linear-gradient(135deg, #6ee7ff, #7c3aed);
+  color: black;
+}
+
+.um-btn.delete {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fecaca;
+}
+
+.um-empty {
+  text-align: center;
+  padding: 16px;
+  color: rgba(234, 240, 255, 0.72);
+}
+
+/* Modal */
+.um-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+}
+
+.um-modal {
+  width: 400px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #0b1220;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.um-modal input {
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(5, 10, 20, 0.35);
+  color: white;
+}
+
+.um-modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+.um-head-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.um-btn.add {
+  background: linear-gradient(to right, #2563eb, #38bdf8);
+  border: none;
+  color: white;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.um-btn.refresh {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}

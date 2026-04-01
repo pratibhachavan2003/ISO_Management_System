@@ -262,3 +262,60 @@
   .audit-two{ grid-template-columns: 1fr; }
   .audit-search{ min-width: 180px; }
 }
+
+.audit-management-page {
+  padding: 25px;
+  color: white;
+}
+
+/* CARDS */
+.audit-cards {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.audit-card {
+  flex: 1;
+  background: #0f172a;
+  padding: 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: 0.3s;
+  border: 2px solid transparent;
+}
+
+.audit-card:hover {
+  transform: translateY(-5px);
+  background: #1e293b;
+}
+
+.audit-card.active {
+  border: 2px solid #22c55e;
+  background: #1e293b;
+}
+
+.audit-card h3 {
+  margin: 0;
+}
+
+.audit-card p {
+  font-size: 28px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* TABLE */
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #020817;
+}
+
+.audit-table th,
+.audit-table td {
+  padding: 12px;
+  border-bottom: 1px solid #334155;
+  text-align: center;
+}

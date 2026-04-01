@@ -1,45 +1,90 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import "./AdminAudits.css";
 
 const AuditManagementPage = () => {
 
-  const [assignedAudits, setAssignedAudits] = useState([]);
-  const [inProgressAudits, setInProgressAudits] = useState([]);
-  const [completedAudits, setCompletedAudits] = useState([]);
+  const [audits, setAudits] = useState([]);
+  const [counts, setCounts] = useState({
+    assignedAudits: 0,
+    inProgressAudits: 0,
+    completedAudits: 0,
+  });
 
-  // ---------------- FETCH DATA ----------------
-  const fetchAudits = async () => {
+  const [activeTab, setActiveTab] = useState("Assigned");
+  const [loading, setLoading] = useState(false);
+
+  // ================= FETCH COUNTS =================
+  const fetchCounts = async () => {
     try {
-      const assigned = await axios.get(
-        "http://localhost:8080/api/audits/assigned-audits"
+      const res = await axios.get(
+        "http://localhost:8080/api/counts"
       );
-
-      const progress = await axios.get(
-        "http://localhost:8080/api/audits/in-progress-audits"
-      );
-
-      const completed = await axios.get(
-        "http://localhost:8080/api/audits/completed-audits"
-      );
-
-      setAssignedAudits(assigned.data);
-      setInProgressAudits(progress.data);
-      setCompletedAudits(completed.data);
-
-    } catch (error) {
-      console.error("Error fetching audits:", error);
+      setCounts(res.data);
+    } catch (err) {
+      console.error("Error fetching counts", err);
     }
   };
 
+  // ================= FETCH AUDITS BY STATUS =================
+  const fetchAuditsByStatus = async (status) => {
+    try {
+      setLoading(true);
+
+      const res = await axios.get(
+        `http://localhost:8080/api/audits?status=${status}`
+      );
+
+      setAudits(res.data || []);
+      setActiveTab(status);
+
+    } catch (err) {
+      console.error("Error fetching audits", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ================= INITIAL LOAD =================
   useEffect(() => {
-    fetchAudits();
+    fetchCounts();
+    fetchAuditsByStatus("Assigned");
   }, []);
 
-  // ---------------- TABLE UI ----------------
-  const renderTable = (title, audits) => (
-    <div className="audit-section">
-      <h2>{title}</h2>
+  // ================= UI =================
+  return (
+    <div className="audit-management-page">
 
+      {/* ===== STATUS CARDS ===== */}
+      <div className="audit-cards">
+
+        <div
+          className={`audit-card ${activeTab === "Assigned" ? "active" : ""}`}
+          onClick={() => fetchAuditsByStatus("Assigned")}
+        >
+          <h3>Assigned Audits</h3>
+          <p>{counts.assignedAudits}</p>
+        </div>
+
+        <div
+          className={`audit-card ${activeTab === "In Progress" ? "active" : ""}`}
+          onClick={() => fetchAuditsByStatus("In Progress")}
+        >
+          <h3>In Progress</h3>
+          <p>{counts.inProgressAudits}</p>
+        </div>
+
+        <div
+          className={`audit-card ${activeTab === "Completed" ? "active" : ""}`}
+          onClick={() => fetchAuditsByStatus("Completed")}
+        >
+          <h3>Completed</h3>
+          <p>{counts.completedAudits}</p>
+        </div>
+
+      </div>
+
+      {/* ===== TABLE ===== */}
       <table className="audit-table">
         <thead>
           <tr>
@@ -52,7 +97,11 @@ const AuditManagementPage = () => {
         </thead>
 
         <tbody>
-          {audits.length === 0 ? (
+          {loading ? (
+            <tr>
+              <td colSpan="5">Loading...</td>
+            </tr>
+          ) : audits.length === 0 ? (
             <tr>
               <td colSpan="5">No Records Found</td>
             </tr>
@@ -69,17 +118,6 @@ const AuditManagementPage = () => {
           )}
         </tbody>
       </table>
-    </div>
-  );
-
-  return (
-    <div className="audit-management-page">
-
-      {renderTable("Assigned Audits", assignedAudits)}
-
-      {renderTable("In Progress Audits", inProgressAudits)}
-
-      {renderTable("Completed Audits", completedAudits)}
 
     </div>
   );

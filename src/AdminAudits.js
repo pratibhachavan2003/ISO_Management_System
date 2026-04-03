@@ -4,46 +4,64 @@ import "./AuditManagementPage.css";
 
 const AuditManagementPage = () => {
 
-  const [assignedAudits, setAssignedAudits] = useState([]);
-  const [inProgressAudits, setInProgressAudits] = useState([]);
-  const [completedAudits, setCompletedAudits] = useState([]);
+  const [audits, setAudits] = useState([]);
+  const [activeStatus, setActiveStatus] = useState("ASSIGNED");
+  const [loading, setLoading] = useState(false);
 
-  const [activeSection, setActiveSection] = useState("assigned");
-
-  // ================= FETCH DATA =================
-  const fetchAudits = async () => {
+  // ================= FETCH =================
+  const fetchAudits = async (status) => {
     try {
+      setLoading(true);
 
-      const assigned = await axios.get(
-        "http://localhost:8080/api/audits?status=ASSIGNED"
+      const res = await axios.get(
+        `http://localhost:8080/api/audits?status=${status}`
       );
 
-      const progress = await axios.get(
-        "http://localhost:8080/api/audits?status=IN_PROGRESS"
-      );
+      console.log("API DATA:", res.data);
 
-      const completed = await axios.get(
-        "http://localhost:8080/api/audits?status=COMPLETED"
-      );
-
-      setAssignedAudits(assigned.data || []);
-      setInProgressAudits(progress.data || []);
-      setCompletedAudits(completed.data || []);
+      setAudits(res.data || []);
+      setActiveStatus(status);
 
     } catch (error) {
       console.error("Error fetching audits:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAudits();
+    fetchAudits("ASSIGNED");
   }, []);
 
-  // ================= TABLE =================
-  const renderTable = (title, audits) => (
-    <div className="audit-section">
-      <h2>{title}</h2>
+  // ================= UI =================
+  return (
+    <div className="audit-management-page">
 
+      {/* BUTTONS */}
+      <div className="audit-buttons">
+        <button
+          className={activeStatus === "ASSIGNED" ? "active" : ""}
+          onClick={() => fetchAudits("ASSIGNED")}
+        >
+          Assigned
+        </button>
+
+        <button
+          className={activeStatus === "IN_PROGRESS" ? "active" : ""}
+          onClick={() => fetchAudits("IN_PROGRESS")}
+        >
+          In Progress
+        </button>
+
+        <button
+          className={activeStatus === "COMPLETED" ? "active" : ""}
+          onClick={() => fetchAudits("COMPLETED")}
+        >
+          Completed
+        </button>
+      </div>
+
+      {/* TABLE */}
       <table className="audit-table">
         <thead>
           <tr>
@@ -59,7 +77,11 @@ const AuditManagementPage = () => {
         </thead>
 
         <tbody>
-          {audits.length === 0 ? (
+          {loading ? (
+            <tr>
+              <td colSpan="8">Loading...</td>
+            </tr>
+          ) : audits.length === 0 ? (
             <tr>
               <td colSpan="8">No Records Found</td>
             </tr>
@@ -67,72 +89,18 @@ const AuditManagementPage = () => {
             audits.map((audit) => (
               <tr key={audit.auditId}>
                 <td>{audit.auditId}</td>
-
-                {/* FIXED FIELD */}
                 <td>{audit.auditType}</td>
-
-                {/* ARRAY DISPLAY */}
                 <td>{audit.isoStandards?.join(", ")}</td>
-
                 <td>{audit.preferredDate}</td>
-
                 <td>{audit.auditLocation}</td>
-
-                <td>
-                  {audit.assignedAuditor || "Not Assigned"}
-                </td>
-
+                <td>{audit.assignedAuditor || "Not Assigned"}</td>
                 <td>{audit.duration}</td>
-
-                <td className={`status ${audit.status?.toLowerCase()}`}>
-                  {audit.status}
-                </td>
+                <td>{audit.status}</td>
               </tr>
             ))
           )}
         </tbody>
       </table>
-    </div>
-  );
-
-  return (
-    <div className="audit-management-page">
-
-      {/* ================= BUTTONS ================= */}
-      <div className="audit-buttons">
-
-        <button
-          className={activeSection === "assigned" ? "active" : ""}
-          onClick={() => setActiveSection("assigned")}
-        >
-          Assigned Audits
-        </button>
-
-        <button
-          className={activeSection === "progress" ? "active" : ""}
-          onClick={() => setActiveSection("progress")}
-        >
-          In Progress
-        </button>
-
-        <button
-          className={activeSection === "completed" ? "active" : ""}
-          onClick={() => setActiveSection("completed")}
-        >
-          Completed
-        </button>
-
-      </div>
-
-      {/* ================= CONDITIONAL VIEW ================= */}
-      {activeSection === "assigned" &&
-        renderTable("Assigned Audits", assignedAudits)}
-
-      {activeSection === "progress" &&
-        renderTable("In Progress Audits", inProgressAudits)}
-
-      {activeSection === "completed" &&
-        renderTable("Completed Audits", completedAudits)}
 
     </div>
   );

@@ -240,7 +240,7 @@ export default function AuditorDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           auditorEmail,
-          status: selectedAudit.status || status || "In Progress",
+          status: selectedAudit.status || status || "In_Progress",
           message: `ADMIN NOTICE: ${statusMessage}`,
         }),
       });
@@ -319,7 +319,7 @@ export default function AuditorDashboard() {
     return {
       total: audits.length,
       assigned: audits.filter((a) => (a.status || "").toLowerCase() === "assigned").length,
-      inProgress: audits.filter((a) => (a.status || "").toLowerCase() === "in progress").length,
+      inProgress: audits.filter((a) => (a.status || "").toLowerCase() === "In_Progress").length,
       correctionRequired: audits.filter(
         (a) => (a.status || "").toLowerCase() === "correction required"
       ).length,
@@ -353,7 +353,7 @@ export default function AuditorDashboard() {
             <strong>{stats.assigned}</strong>
           </div>
           <div className="mini-stat">
-            <span>In Progress</span>
+            <span>In_Progress</span>
             <strong>{stats.inProgress}</strong>
           </div>
           <div className="mini-stat">
@@ -390,7 +390,7 @@ export default function AuditorDashboard() {
             <p>{stats.assigned}</p>
           </div>
           <div className="top-card">
-            <h4>In Progress</h4>
+            <h4>In_Progress</h4>
             <p>{stats.inProgress}</p>
           </div>
           <div className="top-card">
@@ -414,7 +414,7 @@ export default function AuditorDashboard() {
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="ALL">All Status</option>
             <option value="Assigned">Assigned</option>
-            <option value="In Progress">In Progress</option>
+            <option value="In_Progress">In_Progress</option>
             <option value="Correction Required">Correction Required</option>
             <option value="Resubmitted">Resubmitted</option>
             <option value="Final Audit">Final Audit</option>
@@ -628,7 +628,7 @@ export default function AuditorDashboard() {
                   <select value={status} onChange={(e) => setStatus(e.target.value)}>
                     <option value="">Select Status</option>
                     <option value="Assigned">Assigned</option>
-                    <option value="In Progress">In Progress</option>
+                    <option value="In_Progress">In_Progress</option>
                     <option value="Correction Required">Correction Required</option>
                     <option value="Resubmitted">Resubmitted</option>
                     <option value="Final Audit">Final Audit</option>
